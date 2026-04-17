@@ -1,17 +1,475 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CRM Industrial B2B</title>
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; }
-      input, select, textarea, button { font-family: inherit; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>CRM Industrial B2B · 3S+M</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a}
+    input,select,textarea,button{font-family:inherit}
+    textarea{resize:vertical}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#ddd;border-radius:3px}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const STAGES = [
+  { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"#888780" },
+  { id:"qualificacao", label:"Qualificação",  tag:"S2",   color:"#185FA5" },
+  { id:"diagnostico",  label:"Diagnóstico",   tag:"S2+",  color:"#378ADD" },
+  { id:"proposta",     label:"Proposta",      tag:"S3",   color:"#BA7517" },
+  { id:"negociacao",   label:"Negociação",    tag:"NEG",  color:"#D85A30" },
+  { id:"fechamento",   label:"Fechamento",    tag:"FECH", color:"#639922" },
+  { id:"pos_venda",    label:"Pós-Venda",     tag:"M",    color:"#0F6E56" },
+];
+
+const DEMO = [{"id":"1","title":"Multiplicador HT3-1000 + Torq. Pro200","company":"Arcelormittal","contact":"Rafael Martins","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Verificar torque processo","nextDate":"2026-04-15","notes":"15.04.26 - Verificar torque processo | 01.04.26 - Primeira visita - oportunidade","history":[],"createdAt":"2026-04-16"},{"id":"2","title":"Bancada calibração dinâmica ISO 5393 — Kistler combiTEST","company":"Caterpillar","contact":"Michel Pizzol","value":1546542,"stage":"qualificacao","priority":"alta","nextAction":"MD - ainda buscando aprovação de verba","nextDate":"2026-03-18","notes":"18.03.26 - MD - ainda buscando aprovação de verba | 10.03.26 - Marcio ainda não tem informações de compras","history":[],"createdAt":"2026-04-16"},{"id":"3","title":"Chave de Impacto 140Nm IDS 18V-200T — Bosch PT","company":"Caterpillar","contact":"Marcio Domingues Junior / Daciano","value":5000,"stage":"qualificacao","priority":"baixa","nextAction":"Ferramenta em manutenção (Service)","nextDate":"2026-03-27","notes":"27.03.26 - Ferramenta em manutenção (Service) | 10.03.26 - Ferramenta irá para Service","history":[],"createdAt":"2026-04-16"},{"id":"4","title":"Soquetes de impacto 0-1/4 + 1-SF1/2 — Momento","company":"Electrolux","contact":"Carlos Ferreira / Rubio / José Rodrigues","value":0,"stage":"proposta","priority":"media","nextAction":"Rubio irá ajustar robô - 2 soquetes (relatório)","nextDate":"2026-04-08","notes":"08.04.26 - Rubio irá ajustar robô - 2 soquetes | 02.04.26 - Visita pré-agendada - problema comprimento","history":[],"createdAt":"2026-04-16"},{"id":"5","title":"Projeto BKP Forno — Bosch","company":"Electrolux","contact":"Ronaldo Custódio","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Enviar proposta","nextDate":"2026-04-16","notes":"16.04.26 - Enviar proposta | 31.03.26 - Ronaldo reativou projeto","history":[],"createdAt":"2026-04-16"},{"id":"6","title":"Ferramentas manuais recorrentes — Stahlwille","company":"Embraer BOT","contact":"Fabio Zenebon / Leife Zaia","value":933,"stage":"pos_venda","priority":"alta","nextAction":"PO 906248143","nextDate":"2026-03-27","notes":"27.03.26 - PO 906248143 | 23.02.26 - PO 906208545","history":[],"createdAt":"2026-04-16"},{"id":"7","title":"EBT-C — Equipamento movimentar flyer — Norbar","company":"Embraer GPX","contact":"Roberto Nepomucceno","value":80000,"stage":"qualificacao","priority":"media","nextAction":"Visita postergada (EBT-CA Service)","nextDate":"2026-04-08","notes":"08.04.26 - Visita postergada (EBT-CA Service) | 15.10.25 - FUP RN Projeto 2026","history":[],"createdAt":"2026-04-16"},{"id":"8","title":"EvoTorque EBT 52-800 — Norbar","company":"Embraer GPX","contact":"Roberto Nepomucceno","value":150000,"stage":"qualificacao","priority":"media","nextAction":"Visita postergada (EBT-CA Service)","nextDate":"2026-04-08","notes":"08.04.26 - Visita postergada (EBT-CA Service) | 15.10.25 - RN Projeto 2026","history":[],"createdAt":"2026-04-16"},{"id":"9","title":"EvoTorque EBT-C-1100 — Bosch PT","company":"Embraer GPX","contact":"Eduardo Bizeli / Daniel Bolusi","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Visita postergada (EBT-CA Service)","nextDate":"2026-04-08","notes":"08.04.26 - Visita postergada (EBT-CA Service) | 15.10.25 - Projeto 2026","history":[],"createdAt":"2026-04-16"},{"id":"10","title":"ANGLE EXACT ION 30-290 [PERDIDA] — Bosch IW","company":"GWM","contact":"Cesar Augusto Porsebon / Bruno Miranda","value":208215,"stage":"prospeccao","priority":"alta","nextAction":"BM fará nova solicitação ME21913415","nextDate":"2026-03-13","notes":"13.03.26 - BM fará nova solicitação | 12.03.26 - FUP Diego - fechou - PERDIDA $$$","history":[],"createdAt":"2026-04-16"},{"id":"11","title":"Lista de ferramentas — Bosch IW","company":"GWM","contact":"Marcelo Santos / Paulo Pila","value":776959,"stage":"qualificacao","priority":"alta","nextAction":"e-mail report - compras parceladas","nextDate":"2026-03-09","notes":"09.03.26 - e-mail report EF compras parceladas | 15.10.25 - Aguardando retorno China","history":[],"createdAt":"2026-04-16"},{"id":"12","title":"AccuPulse 120Nm + 60Nm + EXACT ION 12-700 — Bosch IW","company":"GWM","contact":"Diego Correa","value":290314,"stage":"negociacao","priority":"alta","nextAction":"Visita após 20.04","nextDate":"2026-04-20","notes":"01.04.26 - Visita após 20.04 | 06.03.26 - BR21593.26EF","history":[],"createdAt":"2026-04-16"},{"id":"13","title":"Retrofit transportador Hanger — Bosch Rexroth","company":"GWM","contact":"Paulo Pila / Marcelo Santos","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Sem previsão — aguardar supervisão","nextDate":"2026-03-20","notes":"20.03.26 - Sem previsão | 20.01.26 - PP aguardar nova ordem da supervisão","history":[],"createdAt":"2026-04-16"},{"id":"14","title":"Treinamento manutenção Bosch e Panasonic — Bosch IW","company":"GWM","contact":"Marcelo Santos","value":18688,"stage":"qualificacao","priority":"baixa","nextAction":"Paulo Pila buscando budget","nextDate":"2026-03-20","notes":"20.03.26 - Sem previsão | 11.02.26 - Paulo Pila buscando budget","history":[],"createdAt":"2026-04-16"},{"id":"15","title":"AccuPulse 4+ 47Nm bancada — Panasonic","company":"Honda - Itirapina - MF","contact":"Antonio Paulino da Silva (Tony)","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Tony irá fazer FUP com Qualidade","nextDate":"2026-04-02","notes":"02.04.26 - Tony irá fazer FUP com Qualidade | 19.03.26 - e-mail report EF/DC","history":[],"createdAt":"2026-04-16"},{"id":"16","title":"AccuPulse 4+ pulsativa 60Nm — Panasonic","company":"Honda - Itirapina - MF","contact":"José Roberto Tolentino / Silvio Yabiku","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Apresentação / agendar teste bancada","nextDate":"2026-03-18","notes":"18.03.26 - Apresentação / agendar teste bancada | 04.03.26 - Visita com DC","history":[],"createdAt":"2026-04-16"},{"id":"17","title":"AccuPulse 30Nm EYFLA8A (3x) — Panasonic","company":"Honda - Itirapina - Solda","contact":"José Roberto Tolentino / Silvio Yabiku","value":26130,"stage":"qualificacao","priority":"baixa","nextAction":"FUP RC aguardar Tolentino 1º turno","nextDate":"2026-04-02","notes":"02.04.26 - FUP RC aguardar Tolentino 1º turno | 18.03.26 - Visita agendada com Tony","history":[],"createdAt":"2026-04-16"},{"id":"18","title":"Exact ION 12V — Bosch IW","company":"Honda - Sumaré Motores","contact":"Fabio Azazias","value":6293,"stage":"qualificacao","priority":"baixa","nextAction":"FUP sem retorno","nextDate":"2026-03-19","notes":"19.03.26 - FUP sem retorno | 04.11.25 - Demanda para 2026","history":[],"createdAt":"2026-04-16"},{"id":"19","title":"AccuPulse QP 35Nm EYFLF2XC — Panasonic","company":"Hyundai","contact":"Mateus Fernandes / Paulo Roberto Gil Cavina","value":23210,"stage":"diagnostico","priority":"baixa","nextAction":"Agendar validação na SINUELO","nextDate":"2026-02-04","notes":"04.02.26 - MF não pode atender, agendar 03.2026 | Cm/Cmk obrigatório ±20%","history":[],"createdAt":"2026-04-16"},{"id":"20","title":"Chave catraca 3050-259 fixação portas — Milwaukee","company":"Hyundai - Montagem","contact":"Mateus Fernandes","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"FUP Milwaukee aguardando equipamento","nextDate":"2026-03-31","notes":"31.03.26 - FUP Milwaukee aguardando equipamento | 12.03.26 - Oportunidade linha de portas","history":[],"createdAt":"2026-04-16"},{"id":"21","title":"AccuPulse 22Nm EYFLA7A — Panasonic","company":"Hyundai - Solda","contact":"Gleidison Silva","value":15000,"stage":"diagnostico","priority":"baixa","nextAction":"Requisitado ferramentas para demo","nextDate":"2026-04-04","notes":"04.04.26 - Requisitado ferramentas para demo | 12.03.26 - Pré agendado demo (solda)","history":[],"createdAt":"2026-04-16"},{"id":"22","title":"EvoTorque EBT-C-1100 — Norbar","company":"Imediato Log - Brotas","contact":"Ricardo Pedro Peres","value":80000,"stage":"qualificacao","priority":"media","nextAction":"FUP Itamar (Novo Gestor) - visita agendada","nextDate":"2026-04-02","notes":"02.04.26 - FUP Itamar (Novo Gestor) agendado visita | 15.01.26 - Alvaro se desligou","history":[],"createdAt":"2026-04-16"},{"id":"23","title":"Chave de Impacto 140Nm IDS 18V-200T — Bosch PT","company":"In Roda Avaré","contact":"Gustavo Lorusso / Mateus Moises","value":4724,"stage":"proposta","priority":"media","nextAction":"Demo finalizada (relatório)","nextDate":"2026-03-10","notes":"10.03.26 - Demo finalizada (relatório) | 06.03.26 - Retirar ferramenta","history":[],"createdAt":"2026-04-16"},{"id":"24","title":"ANGLE EXACT ION 15-500 — Bosch IW","company":"Jacto","contact":"Lucas Leme Siqueira","value":21442,"stage":"proposta","priority":"media","nextAction":"Aguarda aprovação supervisão","nextDate":"2025-10-30","notes":"30.10.25 - Aguarda aprovação supervisão | 13.08.25 - Acesso OK","history":[],"createdAt":"2026-04-16"},{"id":"25","title":"Carregadores 12V e 18V — Bosch PT","company":"Jacto","contact":"Lucas Leme Siqueira","value":9500,"stage":"qualificacao","priority":"baixa","nextAction":"Compra pausada","nextDate":"2025-10-30","notes":"30.10.25 - Compra pausada | 25.06.25 - Lucas Leme RFQ","history":[],"createdAt":"2026-04-16"},{"id":"26","title":"EvoTorque EBT-C-750 + Harpa — Norbar","company":"Jacto","contact":"Fabricio Almeida / Guilherme Borges","value":88888,"stage":"proposta","priority":"media","nextAction":"Fabricio aguarda aprovação","nextDate":"2026-04-08","notes":"08.04.26 - Fabricio aguarda aprovação | 26.02.26 - Sem budget","history":[],"createdAt":"2026-04-16"},{"id":"27","title":"EXACT ION 12V-6-670 — Bosch IW","company":"Jacto","contact":"Lucas Leme Siqueira","value":5743,"stage":"qualificacao","priority":"baixa","nextAction":"Compra pausada","nextDate":"2025-10-30","notes":"30.10.25 - Compra pausada | 03.07.25 - LM RFQ","history":[],"createdAt":"2026-04-16"},{"id":"28","title":"Lista ferramentas Exact ION (14x) — Bosch IW","company":"Jacto","contact":"Lucas Leme Siqueira","value":257566,"stage":"qualificacao","priority":"alta","nextAction":"Compra pausada","nextDate":"2026-02-26","notes":"26.02.26 - Compra pausada | 25.02.26 - Agendado visita (Bruno)","history":[],"createdAt":"2026-04-16"},{"id":"29","title":"LTC 750I + Cabeças Intercambiáveis — Sturtevant","company":"Jacto","contact":"Fabricio Almeida","value":132684,"stage":"proposta","priority":"media","nextAction":"Fabricio aguarda aprovação","nextDate":"2026-04-08","notes":"08.04.26 - Fabricio aguarda aprovação | 01.04.26 - Visita agendada","history":[],"createdAt":"2026-04-16"},{"id":"30","title":"Parafusadeira 400Nm (5x) + Chave 1355Nm (2x) — Panasonic+MK","company":"Jacto","contact":"Bruno Guerra / Flauzino Olavo","value":223952,"stage":"proposta","priority":"alta","nextAction":"FUP BG projeto standby","nextDate":"2026-04-08","notes":"08.04.26 - FUP BG projeto standby | 20.03.26 - FUP aguardando aprovação ergonomia","history":[],"createdAt":"2026-04-16"},{"id":"31","title":"Regulador sopro térmico 1609203L51 — Bosch PT","company":"Jacto","contact":"Lucas Leme Siqueira","value":4249,"stage":"pos_venda","priority":"alta","nextAction":"PO 4504729223","nextDate":"2026-03-31","notes":"31.03.26 - PO 4504729223","history":[],"createdAt":"2026-04-16"},{"id":"32","title":"EBT + Sturtevant painel comunicação — Norbar","company":"Jacto - Agro","contact":"Rodrigo Oliveira","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Agendar TEAMS com DC","nextDate":"2026-04-08","notes":"08.04.26 - Agendar TEAMS com DC | 24.03.26 - Rodrigo solicitou visita","history":[],"createdAt":"2026-04-16"},{"id":"33","title":"LTC 750I (7x) + Cabeças Intercambiáveis — Sturtevant","company":"Jacto - Unipac","contact":"Pedro Nishioka","value":45617,"stage":"qualificacao","priority":"baixa","nextAction":"Projeto aguardando budget","nextDate":"2025-10-30","notes":"30.10.25 - Projeto aguardando budget | 19.09.25 - e-mail inquiry","history":[],"createdAt":"2026-04-16"},{"id":"34","title":"EvoTorque EBT-C-750 + Exact ION — Sturtevant","company":"Jacto - Uniports","contact":"João Pedro Vancim / Mario Henrique","value":245128,"stage":"qualificacao","priority":"alta","nextAction":"Sem budget - usar BKP","nextDate":"2026-02-26","notes":"26.02.26 - Sem budget - usar BKP | 25.02.26 - Agendado visita","history":[],"createdAt":"2026-04-16"},{"id":"35","title":"Chave de impacto 2867-259 — Milwaukee","company":"Marchesan Tatu","contact":"Elizeu José da Silva","value":12535,"stage":"qualificacao","priority":"baixa","nextAction":"Sem verba para compra","nextDate":"2026-03-19","notes":"19.03.26 - Sem verba para compra | 11.02.26 - FUP sem retorno","history":[],"createdAt":"2026-04-16"},{"id":"36","title":"EvoTorque EBT-C-1100 — Norbar","company":"Marchesan Tatu","contact":"Elizeu José da Silva / Anderson Rodrigues","value":53991,"stage":"qualificacao","priority":"media","nextAction":"Sem verba — aprovado engenharia, aguarda compras","nextDate":"2026-03-19","notes":"19.03.26 - Sem verba para compra | 27.10.25 - Aprovado pela engenharia, aguarda compras","history":[],"createdAt":"2026-04-16"},{"id":"37","title":"EvoTorque EBT-52-800 — Norbar","company":"Raizen - Barra Bonita","contact":"Marcio Barbosa","value":143269,"stage":"qualificacao","priority":"media","nextAction":"Auditoria de Torques empresa terceirizada","nextDate":"2024-12-03","notes":"03.12.24 - Auditoria de Torques | 06.08.24 - Visita aguardando liberação demo","history":[],"createdAt":"2026-04-16"},{"id":"38","title":"Lista de ferramentas a bateria — Milwaukee","company":"Raizen - Barra Bonita","contact":"Marcio Barbosa / André Borghi","value":59647,"stage":"qualificacao","priority":"media","nextAction":"FUP sem retorno","nextDate":"2025-12-16","notes":"16.12.25 - Tentativa FUP sem retorno | 18.11.24 - FUP Projeto aprovado","history":[],"createdAt":"2026-04-16"},{"id":"39","title":"Torquímetro hidráulico W4000PX — Enerpac","company":"Raízen - Gasa - Andradina","contact":"Cristiane Bombarda","value":212094,"stage":"qualificacao","priority":"alta","nextAction":"FUP email sem retorno","nextDate":"2025-04-09","notes":"09.04.25 - FUP email sem retorno | 10.11.23 - concall RG Programar visita","history":[],"createdAt":"2026-04-16"},{"id":"40","title":"Chave de Impacto 2268-22HD — Milwaukee","company":"Rumo - Araraquara","contact":"Bruno Ferreira / Junior Sorocaba","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Aguardo agenda Bruno - visita com MK","nextDate":"2026-03-30","notes":"30.03.26 - Aguardo agenda Bruno - visita com MK | 04.06.25 - Agendado visita para 12.06","history":[],"createdAt":"2026-04-16"},{"id":"41","title":"EvoTorque EBT-92-4000 Auto 2 Speed — Norbar","company":"Rumo - Araraquara","contact":"Maria Angélica Tavares Jayme","value":164539,"stage":"negociacao","priority":"alta","nextAction":"Projeto pausado — reativar contato","nextDate":"2026-04-10","notes":"10.04.26 - Maria Gabriela - Projeto pausado | 30.03.26 - FUP sem resposta","history":[],"createdAt":"2026-04-16"},{"id":"42","title":"Palhetas para PneuTorque — Norbar","company":"Rumo - Araraquara","contact":"Bruno Ferreira / Junior Sorocaba","value":7192,"stage":"proposta","priority":"media","nextAction":"Bruno enviou RFQ","nextDate":"2026-02-25","notes":"25.02.26 - Bruno enviou RFQ | 09.01.26 - Informado cliente aguardando pedido","history":[],"createdAt":"2026-04-16"},{"id":"43","title":"Torquímetros de Estalo para backup — Sturtevant","company":"Rumo - Araraquara","contact":"Izabela Goes Alves / Bruno Ferreira","value":157152,"stage":"qualificacao","priority":"media","nextAction":"Visita com Bruno - reativar projeto","nextDate":"2026-04-16","notes":"16.04.26 - Visita com Bruno reativar projeto | 12.08.25 - Sem Budget transferido para BF","history":[],"createdAt":"2026-04-16"},{"id":"44","title":"EBT-72-1350 BLU + EBT-92-4000 BLU — Norbar","company":"Sotreq - Manaus","contact":"Agenor Monteiro","value":310729,"stage":"proposta","priority":"alta","nextAction":"FUP sem retorno","nextDate":"2026-02-25","notes":"25.02.26 - FUP sem retorno | 20.05.25 - NR19846.25SP_DC","history":[],"createdAt":"2026-04-16"},{"id":"45","title":"Chave de Impacto 140Nm IDS 18V-200T — Bosch PT","company":"Sotreq - Sumaré","contact":"Guilherme Anhani / João Alves","value":4299,"stage":"proposta","priority":"media","nextAction":"Visita pré agendada","nextDate":"2026-04-03","notes":"03.04.26 - Visita pré agendada | 25.02.26 - Rodrigo se desligou - agora João Alves","history":[],"createdAt":"2026-04-16"},{"id":"46","title":"EvoTorque EBT-C-1100 — Norbar","company":"Sotreq - Sumaré","contact":"Guilherme Anhani / João Alves","value":84349,"stage":"proposta","priority":"media","nextAction":"Visita pré agendada","nextDate":"2026-03-04","notes":"04.03.26 - Visita pré agendada | 09.05.25 - NR16747.23SP2","history":[],"createdAt":"2026-04-16"},{"id":"47","title":"Lista de ferramentas a bateria — Milwaukee","company":"Sotreq - Sumaré","contact":"Rodrigo Teixeira / Felipe","value":0,"stage":"pos_venda","priority":"alta","nextAction":"Conta ativa recorrente — pedidos contínuos","nextDate":"","notes":"Conta ativa recorrente — pedidos contínuos Milwaukee","history":[],"createdAt":"2026-04-16"},{"id":"48","title":"Manutenção Motoniveladora — 3arm","company":"Sotreq - Sumaré","contact":"João Alves","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Ver processo","nextDate":"2026-04-15","notes":"15.04.26 - Ver processo | 01.04.26 - Oportunidade identificada","history":[],"createdAt":"2026-04-16"}];
+
+const PRI_BG  = {alta:"#FCEBEB",media:"#FAEEDA",baixa:"#EAF3DE"};
+const PRI_TXT = {alta:"#791F1F",media:"#633806",baixa:"#27500A"};
+const STORAGE_KEY = "crm_industrial_v2";
+const KEY_STORE   = "crm_api_key";
+
+const SYS_PROMPT = `Você é o Gestor Comercial IA de uma empresa B2B industrial brasileira especializada em:
+- Tecnologia de aperto (torque, ângulo, TTA, Open Protocol, Atlas Copco, Ingersoll Rand, Desoutter, Cleco)
+- MES NOMUDA (rastreabilidade, OEE, integração ERP, gestão de torque, qualidade em linha)
+- Sistemas industriais: Chão de Fábrica → Supervisório → SCADA → MES → ERP
+- Clientes: Caterpillar, Honda, Hyundai, GWM Brasil, Rumo, Baldan, Electrolux, Jacto, Brudden, MP Agro, Piccin
+
+Metodologias dominadas:
+- 3S+M (Triplo SM): Suspect → Suspect Qualificado → Solução → Manutenção com 7 passos de compra/venda
+- 5W2H para planejamento de ações comerciais
+- Kaizen aplicado ao desenvolvimento e fidelização de clientes
+
+Responda em português brasileiro. Seja direto e prático. Máx 180 palavras. Use bullets para listar ações.`;
+
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch {}
+}
+
+function App() {
+  const [opps, setOpps]           = useState(() => loadData() || DEMO);
+  const [sel, setSel]             = useState(null);
+  const [view, setView]           = useState("kanban");
+  const [aiOpen, setAiOpen]       = useState(false);
+  const [aiMsgs, setAiMsgs]       = useState([]);
+  const [aiInput, setAiInput]     = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [apiKey, setApiKey]       = useState(() => localStorage.getItem(KEY_STORE) || "");
+  const [showKey, setShowKey]     = useState(false);
+  const [keyDraft, setKeyDraft]   = useState("");
+  const [newModal, setNewModal]   = useState(false);
+  const [form, setForm]           = useState({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:""});
+  const aiEnd = useRef(null);
+
+  useEffect(() => { saveData(opps); }, [opps]);
+  useEffect(() => { aiEnd.current?.scrollIntoView({behavior:"smooth"}); }, [aiMsgs]);
+
+  function setAndSave(list) { setOpps(list); }
+
+  function updateOpp(u) {
+    setAndSave(opps.map(o => o.id===u.id ? u : o));
+    setSel(u);
+  }
+
+  function move(id, dir) {
+    const opp = opps.find(o=>o.id===id);
+    const idx = STAGES.findIndex(s=>s.id===opp.stage);
+    const ni  = idx+dir;
+    if (ni<0||ni>=STAGES.length) return;
+    const u = {...opp, stage:STAGES[ni].id};
+    setAndSave(opps.map(o=>o.id===id?u:o));
+    setSel(u);
+  }
+
+  function addOpp() {
+    if (!form.title||!form.company) return;
+    const o = {...form, id:Date.now().toString(), value:Number(form.value)||0, history:[], createdAt:new Date().toISOString().slice(0,10)};
+    setAndSave([...opps, o]);
+    setNewModal(false);
+    setForm({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:""});
+  }
+
+  function delOpp(id) { setAndSave(opps.filter(o=>o.id!==id)); setSel(null); }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(opps,null,2)],{type:"application/json"});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href=url; a.download="crm-backup.json"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const d = JSON.parse(ev.target.result);
+        if (Array.isArray(d)) { setAndSave(d); alert("Dados importados com sucesso!"); }
+        else alert("Formato inválido.");
+      } catch { alert("Arquivo inválido."); }
+    };
+    reader.readAsText(file);
+    e.target.value="";
+  }
+
+  function saveKey() {
+    localStorage.setItem(KEY_STORE, keyDraft);
+    setApiKey(keyDraft);
+    setShowKey(false);
+  }
+
+  async function chat(msg) {
+    const m = msg||aiInput;
+    if (!m.trim()||aiLoading) return;
+    if (!apiKey) { setKeyDraft(""); setShowKey(true); return; }
+    const ctx = sel
+      ? `Oportunidade: "${sel.title}" | Empresa: ${sel.company} | Etapa: ${STAGES.find(s=>s.id===sel.stage)?.label} | Valor: R$ ${(sel.value||0).toLocaleString("pt-BR")} | Próxima ação: ${sel.nextAction} | Notas: ${sel.notes}`
+      : "Nenhuma oportunidade selecionada.";
+    const msgs = [...aiMsgs, {role:"user",content:m}];
+    setAiMsgs(msgs);
+    setAiInput("");
+    setAiLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system:SYS_PROMPT,
+          messages:[...msgs.slice(0,-1),{role:"user",content:`${m}\n\nContexto: ${ctx}`}]
+        })
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error.message);
+      const reply = d.content?.map(c=>c.text||"").join("")||"Sem resposta.";
+      setAiMsgs([...msgs,{role:"assistant",content:reply}]);
+    } catch(err) {
+      setAiMsgs([...msgs,{role:"assistant",content:`Erro: ${err.message}`}]);
+    }
+    setAiLoading(false);
+  }
+
+  function openAI(prompt) {
+    if (!apiKey) { setKeyDraft(""); setShowKey(true); return; }
+    setAiOpen(true);
+    if (aiMsgs.length===0) setAiMsgs([{role:"assistant",content:"Olá! Sou seu Gestor IA. Selecione uma oportunidade e me pergunte sobre próximos passos, argumentos NOMUDA, torque, estratégia 3S+M, plano 5W2H ou Kaizen para o cliente."}]);
+    if (prompt) setTimeout(()=>chat(prompt),150);
+  }
+
+  const today    = new Date().toISOString().slice(0,10);
+  const totalVal = opps.reduce((s,o)=>s+(o.value||0),0);
+  const wonVal   = opps.filter(o=>o.stage==="pos_venda").reduce((s,o)=>s+(o.value||0),0);
+  const overdue  = opps.filter(o=>o.nextDate&&o.nextDate<today).length;
+  const highPri  = opps.filter(o=>o.priority==="alta").length;
+
+  const inp = {width:"100%",fontSize:"12px",padding:"7px 9px",borderRadius:"6px",border:"1px solid #ddd",background:"#fafafa",color:"#1a1a1a",boxSizing:"border-box"};
+  const lbl = {fontSize:"11px",color:"#888",marginBottom:"3px",display:"block",textTransform:"uppercase",letterSpacing:"0.05em"};
+  const btn = (bg,tc,bc) => ({padding:"6px 12px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${bc||bg}`,background:bg,color:tc,cursor:"pointer",fontWeight:500});
+
+  return (
+    <div style={{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:"#1a1a1a",background:"#f5f5f3",minHeight:"100vh"}}>
+
+      {/* HEADER */}
+      <div style={{background:"#fff",borderBottom:"1px solid #e8e8e8",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",position:"sticky",top:0,zIndex:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",flex:1,minWidth:"160px"}}>
+          <div style={{width:"28px",height:"28px",borderRadius:"6px",background:"#185FA5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#85B7EB"/></svg>
+          </div>
+          <span style={{fontWeight:600,fontSize:"15px"}}>CRM Industrial B2B</span>
+          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"#E6F1FB",color:"#0C447C",fontWeight:600}}>3S+M</span>
+        </div>
+        <div style={{display:"flex",gap:"4px"}}>
+          {[["kanban","Pipeline"],["dashboard","Funil"],["tasks","Follow-ups"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setView(v)} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#185FA5":"#e8e8e8",background:view===v?"#E6F1FB":"transparent",color:view===v?"#0C447C":"#666",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
+          ))}
+        </div>
+        <button onClick={()=>setNewModal(true)} style={btn("#E1F5EE","#085041","#0F6E56")}>+ Nova oportunidade</button>
+        <button onClick={()=>openAI(null)} style={btn("#EEEDFE","#3C3489","#534AB7")}>Gestor IA</button>
+        <button onClick={exportData} style={btn("#f5f5f3","#555","#ddd")} title="Exportar backup">↓ Backup</button>
+        <label style={{...btn("#f5f5f3","#555","#ddd"),cursor:"pointer"}} title="Importar dados">↑ Importar<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/></label>
+        <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);}} style={{...btn("#f5f5f3","#555","#ddd"),fontSize:"11px"}}>⚙ API Key</button>
+      </div>
+
+      {/* MÉTRICAS */}
+      <div style={{background:"#fff",borderBottom:"1px solid #e8e8e8",padding:"8px 16px",display:"flex",gap:"20px",flexWrap:"wrap"}}>
+        {[
+          {l:"Pipeline total", v:`R$ ${(totalVal/1000).toFixed(0)}k`},
+          {l:"Em pós-venda",   v:`R$ ${(wonVal/1000).toFixed(0)}k`},
+          {l:"Oportunidades",  v:opps.length},
+          {l:"Alta prioridade",v:highPri, warn:highPri>0},
+          {l:"Atrasados",      v:overdue, warn:overdue>0},
+        ].map((m,i)=>(
+          <div key={i} style={{display:"flex",gap:"5px",alignItems:"baseline"}}>
+            <span style={{fontSize:"15px",fontWeight:600,color:m.warn?"#E24B4A":"#1a1a1a"}}>{m.v}</span>
+            <span style={{fontSize:"11px",color:"#aaa"}}>{m.l}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* CORPO */}
+      <div style={{padding:"12px 16px",display:"flex",gap:"12px",alignItems:"flex-start"}}>
+
+        {/* KANBAN */}
+        {view==="kanban" && (
+          <div style={{flex:1,overflowX:"auto"}}>
+            <div style={{display:"flex",gap:"8px",paddingBottom:"8px",minWidth:"max-content"}}>
+              {STAGES.map(stage=>{
+                const cols   = opps.filter(o=>o.stage===stage.id);
+                const colVal = cols.reduce((s,o)=>s+(o.value||0),0);
+                return (
+                  <div key={stage.id} style={{width:"196px",flexShrink:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"5px",marginBottom:"6px"}}>
+                      <span style={{fontSize:"10px",fontWeight:600,padding:"2px 7px",borderRadius:"10px",background:stage.color+"22",color:stage.color}}>{stage.tag}</span>
+                      <span style={{fontSize:"12px",fontWeight:600,flex:1}}>{stage.label}</span>
+                      <span style={{fontSize:"11px",color:"#bbb"}}>{cols.length}</span>
+                    </div>
+                    {colVal>0 && <div style={{fontSize:"11px",color:"#bbb",marginBottom:"5px"}}>R$ {(colVal/1000).toFixed(0)}k</div>}
+                    <div style={{display:"flex",flexDirection:"column",gap:"6px",minHeight:"60px"}}>
+                      {cols.map(opp=>(
+                        <div key={opp.id} onClick={()=>setSel(opp===sel?null:opp)}
+                          style={{background:"#fff",border:`1px solid ${sel?.id===opp.id?stage.color:"#e8e8e8"}`,borderLeft:`3px solid ${stage.color}`,borderRadius:"0 8px 8px 0",padding:"10px 10px 10px 9px",cursor:"pointer"}}>
+                          <div style={{fontSize:"12px",fontWeight:600,marginBottom:"3px",lineHeight:1.3}}>{opp.title}</div>
+                          <div style={{fontSize:"11px",color:"#888",marginBottom:"7px"}}>{opp.company}</div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                            <span style={{fontSize:"12px",fontWeight:600}}>R$ {(opp.value/1000).toFixed(0)}k</span>
+                            <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],fontWeight:600}}>{opp.priority}</span>
+                          </div>
+                          {opp.nextDate&&opp.nextDate<today && <div style={{fontSize:"10px",color:"#E24B4A",marginTop:"5px",fontWeight:600}}>Atrasado · {opp.nextDate}</div>}
+                          {opp.nextAction && <div style={{fontSize:"10px",color:"#bbb",marginTop:"3px",lineHeight:1.3}}>{opp.nextAction.slice(0,52)}{opp.nextAction.length>52?"…":""}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* FUNIL */}
+        {view==="dashboard" && (
+          <div style={{flex:1}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:"8px",marginBottom:"14px"}}>
+              {STAGES.map(s=>{
+                const count = opps.filter(o=>o.stage===s.id).length;
+                const val   = opps.filter(o=>o.stage===s.id).reduce((a,o)=>a+o.value,0);
+                const pct   = totalVal>0?Math.round(val/totalVal*100):0;
+                return (
+                  <div key={s.id} style={{background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"12px",borderTop:`3px solid ${s.color}`}}>
+                    <div style={{fontSize:"10px",color:"#bbb",marginBottom:"4px"}}>{s.tag} · {s.label}</div>
+                    <div style={{fontSize:"22px",fontWeight:600,marginBottom:"2px"}}>{count}</div>
+                    <div style={{fontSize:"11px",color:"#888"}}>R$ {(val/1000).toFixed(0)}k · {pct}%</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"14px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"10px"}}>Todas as oportunidades</div>
+              {[...opps].sort((a,b)=>b.value-a.value).map(opp=>(
+                <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f5f5f5",cursor:"pointer"}}>
+                  <div style={{width:"8px",height:"8px",borderRadius:"50%",background:STAGES.find(s=>s.id===opp.stage)?.color,flexShrink:0}}/>
+                  <span style={{fontSize:"12px",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title}</span>
+                  <span style={{fontSize:"11px",color:"#888",minWidth:"72px",flexShrink:0}}>{opp.company}</span>
+                  <span style={{fontSize:"12px",fontWeight:600,minWidth:"54px",textAlign:"right",flexShrink:0}}>R$ {(opp.value/1000).toFixed(0)}k</span>
+                  <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],flexShrink:0}}>{opp.priority}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* FOLLOW-UPS */}
+        {view==="tasks" && (
+          <div style={{flex:1}}>
+            <div style={{background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"14px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"12px"}}>Follow-ups por data</div>
+              {[...opps].filter(o=>o.nextAction).sort((a,b)=>(a.nextDate||"9999")>(b.nextDate||"9999")?1:-1).map(opp=>{
+                const late = opp.nextDate&&opp.nextDate<today;
+                const stg  = STAGES.find(s=>s.id===opp.stage);
+                return (
+                  <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",gap:"12px",padding:"10px 0",borderBottom:"1px solid #f5f5f5",cursor:"pointer",alignItems:"flex-start"}}>
+                    <div style={{minWidth:"74px",fontSize:"11px",color:late?"#E24B4A":"#bbb",fontWeight:late?600:400}}>{opp.nextDate||"—"}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:"12px",fontWeight:600,marginBottom:"2px"}}>{opp.nextAction}</div>
+                      <div style={{fontSize:"11px",color:"#888"}}>{opp.company} · {opp.title}</div>
+                    </div>
+                    <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:stg?.color+"22",color:stg?.color,fontWeight:600,flexShrink:0}}>{stg?.tag}</span>
+                    <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],flexShrink:0}}>{opp.priority}</span>
+                  </div>
+                );
+              })}
+              {opps.filter(o=>o.nextAction).length===0 && <div style={{fontSize:"13px",color:"#bbb",textAlign:"center",padding:"20px 0"}}>Nenhum follow-up cadastrado</div>}
+            </div>
+          </div>
+        )}
+
+        {/* PAINEL DETALHE */}
+        {sel && (
+          <div style={{width:"272px",flexShrink:0,background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"14px",position:"sticky",top:"60px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
+              <div style={{flex:1,paddingRight:"8px"}}>
+                <div style={{fontSize:"13px",fontWeight:600,marginBottom:"2px",lineHeight:1.3}}>{sel.title}</div>
+                <div style={{fontSize:"11px",color:"#888"}}>{sel.company} · {sel.contact}</div>
+              </div>
+              <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px",lineHeight:1,padding:0}}>✕</button>
+            </div>
+            <div style={{display:"flex",gap:"5px",flexWrap:"wrap",marginBottom:"10px"}}>
+              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:"#E6F1FB",color:"#0C447C",fontWeight:600}}>R$ {(sel.value||0).toLocaleString("pt-BR")}</span>
+              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:PRI_BG[sel.priority],color:PRI_TXT[sel.priority],fontWeight:600}}>{sel.priority}</span>
+              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:(STAGES.find(s=>s.id===sel.stage)?.color||"#888")+"22",color:STAGES.find(s=>s.id===sel.stage)?.color,fontWeight:600}}>{STAGES.find(s=>s.id===sel.stage)?.label}</span>
+            </div>
+            <div style={{display:"flex",gap:"5px",marginBottom:"12px"}}>
+              <button onClick={()=>move(sel.id,-1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid #ddd",background:"transparent",cursor:"pointer",color:"#666"}}>← Recuar</button>
+              <button onClick={()=>move(sel.id,1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid #0F6E56",background:"#E1F5EE",cursor:"pointer",color:"#085041",fontWeight:600}}>Avançar →</button>
+            </div>
+            {[
+              {label:"Próxima ação",     key:"nextAction", type:"textarea"},
+              {label:"Data follow-up",   key:"nextDate",   type:"date"},
+              {label:"Valor R$",         key:"value",      type:"number"},
+              {label:"Notas",            key:"notes",      type:"textarea"},
+            ].map(f=>(
+              <div key={f.key} style={{marginBottom:"8px"}}>
+                <label style={lbl}>{f.label}</label>
+                {f.type==="textarea"
+                  ? <textarea value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:e.target.value})} style={{...inp,height:f.key==="notes"?"72px":"46px"}}/>
+                  : <input type={f.type} value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:f.type==="number"?Number(e.target.value):e.target.value})} style={inp}/>
+                }
+              </div>
+            ))}
+            <div style={{marginBottom:"10px"}}>
+              <label style={lbl}>Prioridade</label>
+              <div style={{display:"flex",gap:"4px"}}>
+                {["alta","media","baixa"].map(p=>(
+                  <button key={p} onClick={()=>updateOpp({...sel,priority:p})} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${sel.priority===p?PRI_TXT[p]:"#ddd"}`,background:sel.priority===p?PRI_BG[p]:"transparent",color:sel.priority===p?PRI_TXT[p]:"#888",cursor:"pointer",fontWeight:sel.priority===p?600:400,textTransform:"capitalize"}}>{p}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:"5px"}}>
+              <button onClick={()=>openAI(`Analise a oportunidade "${sel.title}" da ${sel.company} na etapa ${STAGES.find(s=>s.id===sel.stage)?.label}. Próximos passos com 3S+M?`)} style={{flex:1,padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid #534AB7",background:"#EEEDFE",color:"#3C3489",cursor:"pointer",fontWeight:600}}>Analisar com IA</button>
+              <button onClick={()=>delOpp(sel.id)} style={{padding:"7px 10px",fontSize:"11px",borderRadius:"6px",border:"1px solid #E24B4A",background:"#FCEBEB",color:"#791F1F",cursor:"pointer"}}>Excluir</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* PAINEL IA */}
+      {aiOpen && (
+        <div style={{position:"fixed",bottom:0,right:"16px",width:"330px",background:"#fff",border:"1px solid #e8e8e8",borderRadius:"12px 12px 0 0",display:"flex",flexDirection:"column",maxHeight:"480px",boxShadow:"0 -4px 24px rgba(0,0,0,0.09)",zIndex:50}}>
+          <div style={{padding:"10px 14px",borderBottom:"1px solid #f0f0f0",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+            <div style={{width:"24px",height:"24px",borderRadius:"50%",background:"#534AB7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff",fontWeight:600,flexShrink:0}}>IA</div>
+            <span style={{fontSize:"13px",fontWeight:600,flex:1}}>Gestor IA · 3S+M</span>
+            {sel && <span style={{fontSize:"11px",color:"#bbb",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"80px"}}>{sel.company}</span>}
+            <button onClick={()=>setAiOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px",lineHeight:1}}>✕</button>
+          </div>
+          <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
+            {aiMsgs.map((m,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+                <div style={{maxWidth:"88%",padding:"8px 11px",borderRadius:m.role==="user"?"10px 10px 0 10px":"10px 10px 10px 0",background:m.role==="user"?"#E6F1FB":"#f5f5f3",fontSize:"12px",lineHeight:1.55,color:m.role==="user"?"#0C447C":"#1a1a1a",whiteSpace:"pre-wrap"}}>{m.content}</div>
+              </div>
+            ))}
+            {aiLoading && <div style={{display:"flex"}}><div style={{padding:"8px 12px",borderRadius:"10px 10px 10px 0",background:"#f5f5f3",fontSize:"12px",color:"#aaa"}}>Analisando...</div></div>}
+            <div ref={aiEnd}/>
+          </div>
+          <div style={{padding:"6px 8px 4px",borderTop:"1px solid #f0f0f0",display:"flex",flexWrap:"wrap",gap:"4px",flexShrink:0}}>
+            {["Próximo passo 3S+M","Argumento NOMUDA","Plano 5W2H","Kaizen para este cliente","Risco de perda"].map(q=>(
+              <button key={q} onClick={()=>chat(q)} style={{fontSize:"10px",padding:"3px 8px",borderRadius:"10px",border:"1px solid #e8e8e8",background:"transparent",cursor:"pointer",color:"#666"}}>{q}</button>
+            ))}
+          </div>
+          <div style={{padding:"6px 8px 8px",display:"flex",gap:"6px",flexShrink:0}}>
+            <input value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&chat()} placeholder="Pergunte ao gestor IA..." style={{flex:1,fontSize:"12px",padding:"7px 10px",borderRadius:"6px",border:"1px solid #ddd",background:"#fafafa"}}/>
+            <button onClick={()=>chat()} disabled={aiLoading} style={{padding:"7px 14px",fontSize:"13px",borderRadius:"6px",border:"none",background:aiLoading?"#CECBF6":"#534AB7",color:aiLoading?"#534AB7":"#fff",cursor:aiLoading?"default":"pointer",fontWeight:600}}>→</button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL API KEY */}
+      {showKey && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+          <div style={{background:"#fff",borderRadius:"12px",padding:"20px",width:"380px",maxWidth:"90vw",border:"1px solid #e8e8e8"}}>
+            <div style={{fontSize:"14px",fontWeight:600,marginBottom:"8px"}}>Chave da API Anthropic</div>
+            <p style={{fontSize:"12px",color:"#666",marginBottom:"14px",lineHeight:1.6}}>Necessária para o Gestor IA funcionar. Obtenha em{" "}
+              <a href="https://console.anthropic.com" target="_blank" style={{color:"#185FA5"}}>console.anthropic.com</a>.
+              {" "}A chave fica salva apenas neste navegador, nunca é enviada para terceiros.
+            </p>
+            <label style={lbl}>API Key (começa com sk-ant-...)</label>
+            <input type="password" value={keyDraft} onChange={e=>setKeyDraft(e.target.value)} placeholder="sk-ant-api03-..." style={{...inp,marginBottom:"12px",fontSize:"13px"}}/>
+            <div style={{display:"flex",gap:"8px"}}>
+              <button onClick={saveKey} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:"#185FA5",color:"#fff",cursor:"pointer",fontWeight:600}}>Salvar</button>
+              <button onClick={()=>setShowKey(false)} style={{padding:"9px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid #ddd",background:"transparent",cursor:"pointer"}}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NOVA OPORTUNIDADE */}
+      {newModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:"16px"}}>
+          <div style={{background:"#fff",borderRadius:"12px",border:"1px solid #e8e8e8",padding:"18px",width:"360px",maxWidth:"100%",maxHeight:"90vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+              <span style={{fontSize:"14px",fontWeight:600}}>Nova oportunidade</span>
+              <button onClick={()=>setNewModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px"}}>✕</button>
+            </div>
+            {[
+              {l:"Título / produto *",  k:"title",      t:"text"},
+              {l:"Empresa *",           k:"company",    t:"text"},
+              {l:"Contato / decisor",   k:"contact",    t:"text"},
+              {l:"Valor estimado R$",   k:"value",      t:"number"},
+              {l:"Próxima ação",        k:"nextAction", t:"text"},
+              {l:"Data do follow-up",   k:"nextDate",   t:"date"},
+            ].map(f=>(
+              <div key={f.k} style={{marginBottom:"8px"}}>
+                <label style={lbl}>{f.l}</label>
+                <input type={f.t} value={form[f.k]} onChange={e=>setForm({...form,[f.k]:e.target.value})} style={inp}/>
+              </div>
+            ))}
+            <div style={{marginBottom:"8px"}}>
+              <label style={lbl}>Notas</label>
+              <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} style={{...inp,height:"56px"}}/>
+            </div>
+            <div style={{display:"flex",gap:"8px",marginBottom:"12px"}}>
+              <div style={{flex:1}}>
+                <label style={lbl}>Etapa inicial</label>
+                <select value={form.stage} onChange={e=>setForm({...form,stage:e.target.value})} style={inp}>
+                  {STAGES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+              </div>
+              <div style={{flex:1}}>
+                <label style={lbl}>Prioridade</label>
+                <select value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})} style={inp}>
+                  <option value="alta">Alta</option>
+                  <option value="media">Média</option>
+                  <option value="baixa">Baixa</option>
+                </select>
+              </div>
+            </div>
+            <button onClick={addOpp} disabled={!form.title||!form.company}
+              style={{width:"100%",padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:form.title&&form.company?"#0F6E56":"#9FE1CB",color:"#fff",cursor:form.title&&form.company?"pointer":"default",fontWeight:600}}>
+              Criar oportunidade
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
 </html>
