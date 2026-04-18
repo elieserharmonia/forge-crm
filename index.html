@@ -9,22 +9,40 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background .25s,color .25s}
     input,select,textarea,button{font-family:inherit}
     textarea{resize:vertical}
     ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:#ddd;border-radius:3px}
+    ::-webkit-scrollbar-thumb{border-radius:3px}
+    body.theme-dark{
+      --bg-app:#1a1a1a;--bg-header:#2A2A2A;--bg-card:#252525;--bg-card2:#1E1E1E;
+      --bg-input:#1a1a1a;--border:#3A3A3A;--border2:#2E2E2E;
+      --text-primary:#F0EDED;--text-secondary:#A09090;--text-muted:#5A5050;
+      --text-accent:#FFAAAA;--text-green:#9FE1CB;--text-blue:#85B7EB;
+      --sinuelo:#8C1A1A;--sinuelo-light:rgba(140,26,26,0.25);--sinuelo-text:#FFAAAA;
+      --scrollbar:#444;
+    }
+    body.theme-light{
+      --bg-app:#f0eeea;--bg-header:#ffffff;--bg-card:#ffffff;--bg-card2:#f7f5f2;
+      --bg-input:#f7f5f2;--border:#e0ddd8;--border2:#ece9e4;
+      --text-primary:#1a1a1a;--text-secondary:#6b6560;--text-muted:#b0aaa4;
+      --text-accent:#8C1A1A;--text-green:#0F6E56;--text-blue:#185FA5;
+      --sinuelo:#8C1A1A;--sinuelo-light:rgba(140,26,26,0.10);--sinuelo-text:#8C1A1A;
+      --scrollbar:#ccc;
+    }
+    body{background:var(--bg-app);color:var(--text-primary)}
+    ::-webkit-scrollbar-thumb{background:var(--scrollbar)}
   </style>
 </head>
-<body>
+<body class="theme-dark">
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
 const STAGES = [
-  { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"#888780" },
-  { id:"qualificacao", label:"Qualificação",  tag:"S2",   color:"#185FA5" },
+  { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"var(--text-secondary)" },
+  { id:"qualificacao", label:"Qualificação",  tag:"S2",   color:"#FF9090" },
   { id:"diagnostico",  label:"Diagnóstico",   tag:"S2+",  color:"#378ADD" },
   { id:"proposta",     label:"Proposta",      tag:"S3",   color:"#BA7517" },
   { id:"negociacao",   label:"Negociação",    tag:"NEG",  color:"#D85A30" },
@@ -32,11 +50,19 @@ const STAGES = [
   { id:"pos_venda",    label:"Pós-Venda",     tag:"M",    color:"#0F6E56" },
 ];
 
-const DEMO = [{"id":"1","title":"Multiplicador HT3-1000 + Torq. Pro200","company":"Arcelormittal","contact":"Rafael Martins","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Verificar torque processo","nextDate":"2026-04-15","notes":"15.04.26 - Verificar torque processo | 01.04.26 - Primeira visita - oportunidade","history":[],"createdAt":"2026-04-16"},{"id":"2","title":"Bancada calibração dinâmica ISO 5393 — Kistler combiTEST","company":"Caterpillar","contact":"Michel Pizzol","value":1546542,"stage":"qualificacao","priority":"alta","nextAction":"MD - ainda buscando aprovação de verba","nextDate":"2026-03-18","notes":"18.03.26 - MD - ainda buscando aprovação de verba | 10.03.26 - Marcio ainda não tem informações de compras","history":[],"createdAt":"2026-04-16"},{"id":"3","title":"Chave de Impacto 140Nm IDS 18V-200T — Bosch PT","company":"Caterpillar","contact":"Marcio Domingues Junior / Daciano","value":5000,"stage":"qualificacao","priority":"baixa","nextAction":"Ferramenta em manutenção (Service)","nextDate":"2026-03-27","notes":"27.03.26 - Ferramenta em manutenção (Service) | 10.03.26 - Ferramenta irá para Service","history":[],"createdAt":"2026-04-16"},{"id":"4","title":"Soquetes de impacto 0-1/4 + 1-SF1/2 — Momento","company":"Electrolux","contact":"Carlos Ferreira / Rubio / José Rodrigues","value":0,"stage":"proposta","priority":"media","nextAction":"Rubio irá ajustar robô - 2 soquetes (relatório)","nextDate":"2026-04-08","notes":"08.04.26 - Rubio irá ajustar robô - 2 soquetes | 02.04.26 - Visita pré-agendada - problema comprimento","history":[],"createdAt":"2026-04-16"},{"id":"5","title":"Projeto BKP Forno — Bosch","company":"Electrolux","contact":"Ronaldo Custódio","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Enviar proposta","nextDate":"2026-04-16","notes":"16.04.26 - Enviar proposta | 31.03.26 - Ronaldo reativou projeto","history":[],"createdAt":"2026-04-16"},{"id":"6","title":"Ferramentas manuais recorrentes — Stahlwille","company":"Embraer BOT","contact":"Fabio Zenebon / Leife Zaia","value":933,"stage":"pos_venda","priority":"alta","nextAction":"PO 906248143","nextDate":"2026-03-27","notes":"27.03.26 - PO 906248143 | 23.02.26 - PO 906208545","history":[],"createdAt":"2026-04-16"},{"id":"7","title":"EBT-C — Equipamento movimentar flyer — Norbar","company":"Embraer GPX","contact":"Roberto Nepomucceno","value":80000,"stage":"qualificacao","priority":"media","nextAction":"Visita postergada (EBT-CA Service)","nextDate":"2026-04-08","notes":"08.04.26 - Visita postergada (EBT-CA Service) | 15.10.25 - FUP RN Projeto 2026","history":[],"createdAt":"2026-04-16"},{"id":"8","title":"EvoTorque EBT 52-800 — Norbar","company":"Embraer GPX","contact":"Roberto Nepomucceno","value":150000,"stage":"qualificacao","priority":"media","nextAction":"Visita postergada (EBT-CA Service)","nextDate":"2026-04-08","notes":"08.04.26 - Visita postergada (EBT-CA Service) | 15.10.25 - RN Projeto 2026","history":[],"createdAt":"2026-04-16"},{"id":"9","title":"EvoTorque EBT-C-1100 — Bosch PT","company":"Embraer GPX","contact":"Eduardo Bizeli / Daniel Bolusi","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Visita postergada (EBT-CA Service)","nextDate":"2026-04-08","notes":"08.04.26 - Visita postergada (EBT-CA Service) | 15.10.25 - Projeto 2026","history":[],"createdAt":"2026-04-16"},{"id":"10","title":"ANGLE EXACT ION 30-290 [PERDIDA] — Bosch IW","company":"GWM","contact":"Cesar Augusto Porsebon / Bruno Miranda","value":208215,"stage":"prospeccao","priority":"alta","nextAction":"BM fará nova solicitação ME21913415","nextDate":"2026-03-13","notes":"13.03.26 - BM fará nova solicitação | 12.03.26 - FUP Diego - fechou - PERDIDA $$$","history":[],"createdAt":"2026-04-16"},{"id":"11","title":"Lista de ferramentas — Bosch IW","company":"GWM","contact":"Marcelo Santos / Paulo Pila","value":776959,"stage":"qualificacao","priority":"alta","nextAction":"e-mail report - compras parceladas","nextDate":"2026-03-09","notes":"09.03.26 - e-mail report EF compras parceladas | 15.10.25 - Aguardando retorno China","history":[],"createdAt":"2026-04-16"},{"id":"12","title":"AccuPulse 120Nm + 60Nm + EXACT ION 12-700 — Bosch IW","company":"GWM","contact":"Diego Correa","value":290314,"stage":"negociacao","priority":"alta","nextAction":"Visita após 20.04","nextDate":"2026-04-20","notes":"01.04.26 - Visita após 20.04 | 06.03.26 - BR21593.26EF","history":[],"createdAt":"2026-04-16"},{"id":"13","title":"Retrofit transportador Hanger — Bosch Rexroth","company":"GWM","contact":"Paulo Pila / Marcelo Santos","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Sem previsão — aguardar supervisão","nextDate":"2026-03-20","notes":"20.03.26 - Sem previsão | 20.01.26 - PP aguardar nova ordem da supervisão","history":[],"createdAt":"2026-04-16"},{"id":"14","title":"Treinamento manutenção Bosch e Panasonic — Bosch IW","company":"GWM","contact":"Marcelo Santos","value":18688,"stage":"qualificacao","priority":"baixa","nextAction":"Paulo Pila buscando budget","nextDate":"2026-03-20","notes":"20.03.26 - Sem previsão | 11.02.26 - Paulo Pila buscando budget","history":[],"createdAt":"2026-04-16"},{"id":"15","title":"AccuPulse 4+ 47Nm bancada — Panasonic","company":"Honda - Itirapina - MF","contact":"Antonio Paulino da Silva (Tony)","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Tony irá fazer FUP com Qualidade","nextDate":"2026-04-02","notes":"02.04.26 - Tony irá fazer FUP com Qualidade | 19.03.26 - e-mail report EF/DC","history":[],"createdAt":"2026-04-16"},{"id":"16","title":"AccuPulse 4+ pulsativa 60Nm — Panasonic","company":"Honda - Itirapina - MF","contact":"José Roberto Tolentino / Silvio Yabiku","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Apresentação / agendar teste bancada","nextDate":"2026-03-18","notes":"18.03.26 - Apresentação / agendar teste bancada | 04.03.26 - Visita com DC","history":[],"createdAt":"2026-04-16"},{"id":"17","title":"AccuPulse 30Nm EYFLA8A (3x) — Panasonic","company":"Honda - Itirapina - Solda","contact":"José Roberto Tolentino / Silvio Yabiku","value":26130,"stage":"qualificacao","priority":"baixa","nextAction":"FUP RC aguardar Tolentino 1º turno","nextDate":"2026-04-02","notes":"02.04.26 - FUP RC aguardar Tolentino 1º turno | 18.03.26 - Visita agendada com Tony","history":[],"createdAt":"2026-04-16"},{"id":"18","title":"Exact ION 12V — Bosch IW","company":"Honda - Sumaré Motores","contact":"Fabio Azazias","value":6293,"stage":"qualificacao","priority":"baixa","nextAction":"FUP sem retorno","nextDate":"2026-03-19","notes":"19.03.26 - FUP sem retorno | 04.11.25 - Demanda para 2026","history":[],"createdAt":"2026-04-16"},{"id":"19","title":"AccuPulse QP 35Nm EYFLF2XC — Panasonic","company":"Hyundai","contact":"Mateus Fernandes / Paulo Roberto Gil Cavina","value":23210,"stage":"diagnostico","priority":"baixa","nextAction":"Agendar validação na SINUELO","nextDate":"2026-02-04","notes":"04.02.26 - MF não pode atender, agendar 03.2026 | Cm/Cmk obrigatório ±20%","history":[],"createdAt":"2026-04-16"},{"id":"20","title":"Chave catraca 3050-259 fixação portas — Milwaukee","company":"Hyundai - Montagem","contact":"Mateus Fernandes","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"FUP Milwaukee aguardando equipamento","nextDate":"2026-03-31","notes":"31.03.26 - FUP Milwaukee aguardando equipamento | 12.03.26 - Oportunidade linha de portas","history":[],"createdAt":"2026-04-16"},{"id":"21","title":"AccuPulse 22Nm EYFLA7A — Panasonic","company":"Hyundai - Solda","contact":"Gleidison Silva","value":15000,"stage":"diagnostico","priority":"baixa","nextAction":"Requisitado ferramentas para demo","nextDate":"2026-04-04","notes":"04.04.26 - Requisitado ferramentas para demo | 12.03.26 - Pré agendado demo (solda)","history":[],"createdAt":"2026-04-16"},{"id":"22","title":"EvoTorque EBT-C-1100 — Norbar","company":"Imediato Log - Brotas","contact":"Ricardo Pedro Peres","value":80000,"stage":"qualificacao","priority":"media","nextAction":"FUP Itamar (Novo Gestor) - visita agendada","nextDate":"2026-04-02","notes":"02.04.26 - FUP Itamar (Novo Gestor) agendado visita | 15.01.26 - Alvaro se desligou","history":[],"createdAt":"2026-04-16"},{"id":"23","title":"Chave de Impacto 140Nm IDS 18V-200T — Bosch PT","company":"In Roda Avaré","contact":"Gustavo Lorusso / Mateus Moises","value":4724,"stage":"proposta","priority":"media","nextAction":"Demo finalizada (relatório)","nextDate":"2026-03-10","notes":"10.03.26 - Demo finalizada (relatório) | 06.03.26 - Retirar ferramenta","history":[],"createdAt":"2026-04-16"},{"id":"24","title":"ANGLE EXACT ION 15-500 — Bosch IW","company":"Jacto","contact":"Lucas Leme Siqueira","value":21442,"stage":"proposta","priority":"media","nextAction":"Aguarda aprovação supervisão","nextDate":"2025-10-30","notes":"30.10.25 - Aguarda aprovação supervisão | 13.08.25 - Acesso OK","history":[],"createdAt":"2026-04-16"},{"id":"25","title":"Carregadores 12V e 18V — Bosch PT","company":"Jacto","contact":"Lucas Leme Siqueira","value":9500,"stage":"qualificacao","priority":"baixa","nextAction":"Compra pausada","nextDate":"2025-10-30","notes":"30.10.25 - Compra pausada | 25.06.25 - Lucas Leme RFQ","history":[],"createdAt":"2026-04-16"},{"id":"26","title":"EvoTorque EBT-C-750 + Harpa — Norbar","company":"Jacto","contact":"Fabricio Almeida / Guilherme Borges","value":88888,"stage":"proposta","priority":"media","nextAction":"Fabricio aguarda aprovação","nextDate":"2026-04-08","notes":"08.04.26 - Fabricio aguarda aprovação | 26.02.26 - Sem budget","history":[],"createdAt":"2026-04-16"},{"id":"27","title":"EXACT ION 12V-6-670 — Bosch IW","company":"Jacto","contact":"Lucas Leme Siqueira","value":5743,"stage":"qualificacao","priority":"baixa","nextAction":"Compra pausada","nextDate":"2025-10-30","notes":"30.10.25 - Compra pausada | 03.07.25 - LM RFQ","history":[],"createdAt":"2026-04-16"},{"id":"28","title":"Lista ferramentas Exact ION (14x) — Bosch IW","company":"Jacto","contact":"Lucas Leme Siqueira","value":257566,"stage":"qualificacao","priority":"alta","nextAction":"Compra pausada","nextDate":"2026-02-26","notes":"26.02.26 - Compra pausada | 25.02.26 - Agendado visita (Bruno)","history":[],"createdAt":"2026-04-16"},{"id":"29","title":"LTC 750I + Cabeças Intercambiáveis — Sturtevant","company":"Jacto","contact":"Fabricio Almeida","value":132684,"stage":"proposta","priority":"media","nextAction":"Fabricio aguarda aprovação","nextDate":"2026-04-08","notes":"08.04.26 - Fabricio aguarda aprovação | 01.04.26 - Visita agendada","history":[],"createdAt":"2026-04-16"},{"id":"30","title":"Parafusadeira 400Nm (5x) + Chave 1355Nm (2x) — Panasonic+MK","company":"Jacto","contact":"Bruno Guerra / Flauzino Olavo","value":223952,"stage":"proposta","priority":"alta","nextAction":"FUP BG projeto standby","nextDate":"2026-04-08","notes":"08.04.26 - FUP BG projeto standby | 20.03.26 - FUP aguardando aprovação ergonomia","history":[],"createdAt":"2026-04-16"},{"id":"31","title":"Regulador sopro térmico 1609203L51 — Bosch PT","company":"Jacto","contact":"Lucas Leme Siqueira","value":4249,"stage":"pos_venda","priority":"alta","nextAction":"PO 4504729223","nextDate":"2026-03-31","notes":"31.03.26 - PO 4504729223","history":[],"createdAt":"2026-04-16"},{"id":"32","title":"EBT + Sturtevant painel comunicação — Norbar","company":"Jacto - Agro","contact":"Rodrigo Oliveira","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Agendar TEAMS com DC","nextDate":"2026-04-08","notes":"08.04.26 - Agendar TEAMS com DC | 24.03.26 - Rodrigo solicitou visita","history":[],"createdAt":"2026-04-16"},{"id":"33","title":"LTC 750I (7x) + Cabeças Intercambiáveis — Sturtevant","company":"Jacto - Unipac","contact":"Pedro Nishioka","value":45617,"stage":"qualificacao","priority":"baixa","nextAction":"Projeto aguardando budget","nextDate":"2025-10-30","notes":"30.10.25 - Projeto aguardando budget | 19.09.25 - e-mail inquiry","history":[],"createdAt":"2026-04-16"},{"id":"34","title":"EvoTorque EBT-C-750 + Exact ION — Sturtevant","company":"Jacto - Uniports","contact":"João Pedro Vancim / Mario Henrique","value":245128,"stage":"qualificacao","priority":"alta","nextAction":"Sem budget - usar BKP","nextDate":"2026-02-26","notes":"26.02.26 - Sem budget - usar BKP | 25.02.26 - Agendado visita","history":[],"createdAt":"2026-04-16"},{"id":"35","title":"Chave de impacto 2867-259 — Milwaukee","company":"Marchesan Tatu","contact":"Elizeu José da Silva","value":12535,"stage":"qualificacao","priority":"baixa","nextAction":"Sem verba para compra","nextDate":"2026-03-19","notes":"19.03.26 - Sem verba para compra | 11.02.26 - FUP sem retorno","history":[],"createdAt":"2026-04-16"},{"id":"36","title":"EvoTorque EBT-C-1100 — Norbar","company":"Marchesan Tatu","contact":"Elizeu José da Silva / Anderson Rodrigues","value":53991,"stage":"qualificacao","priority":"media","nextAction":"Sem verba — aprovado engenharia, aguarda compras","nextDate":"2026-03-19","notes":"19.03.26 - Sem verba para compra | 27.10.25 - Aprovado pela engenharia, aguarda compras","history":[],"createdAt":"2026-04-16"},{"id":"37","title":"EvoTorque EBT-52-800 — Norbar","company":"Raizen - Barra Bonita","contact":"Marcio Barbosa","value":143269,"stage":"qualificacao","priority":"media","nextAction":"Auditoria de Torques empresa terceirizada","nextDate":"2024-12-03","notes":"03.12.24 - Auditoria de Torques | 06.08.24 - Visita aguardando liberação demo","history":[],"createdAt":"2026-04-16"},{"id":"38","title":"Lista de ferramentas a bateria — Milwaukee","company":"Raizen - Barra Bonita","contact":"Marcio Barbosa / André Borghi","value":59647,"stage":"qualificacao","priority":"media","nextAction":"FUP sem retorno","nextDate":"2025-12-16","notes":"16.12.25 - Tentativa FUP sem retorno | 18.11.24 - FUP Projeto aprovado","history":[],"createdAt":"2026-04-16"},{"id":"39","title":"Torquímetro hidráulico W4000PX — Enerpac","company":"Raízen - Gasa - Andradina","contact":"Cristiane Bombarda","value":212094,"stage":"qualificacao","priority":"alta","nextAction":"FUP email sem retorno","nextDate":"2025-04-09","notes":"09.04.25 - FUP email sem retorno | 10.11.23 - concall RG Programar visita","history":[],"createdAt":"2026-04-16"},{"id":"40","title":"Chave de Impacto 2268-22HD — Milwaukee","company":"Rumo - Araraquara","contact":"Bruno Ferreira / Junior Sorocaba","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Aguardo agenda Bruno - visita com MK","nextDate":"2026-03-30","notes":"30.03.26 - Aguardo agenda Bruno - visita com MK | 04.06.25 - Agendado visita para 12.06","history":[],"createdAt":"2026-04-16"},{"id":"41","title":"EvoTorque EBT-92-4000 Auto 2 Speed — Norbar","company":"Rumo - Araraquara","contact":"Maria Angélica Tavares Jayme","value":164539,"stage":"negociacao","priority":"alta","nextAction":"Projeto pausado — reativar contato","nextDate":"2026-04-10","notes":"10.04.26 - Maria Gabriela - Projeto pausado | 30.03.26 - FUP sem resposta","history":[],"createdAt":"2026-04-16"},{"id":"42","title":"Palhetas para PneuTorque — Norbar","company":"Rumo - Araraquara","contact":"Bruno Ferreira / Junior Sorocaba","value":7192,"stage":"proposta","priority":"media","nextAction":"Bruno enviou RFQ","nextDate":"2026-02-25","notes":"25.02.26 - Bruno enviou RFQ | 09.01.26 - Informado cliente aguardando pedido","history":[],"createdAt":"2026-04-16"},{"id":"43","title":"Torquímetros de Estalo para backup — Sturtevant","company":"Rumo - Araraquara","contact":"Izabela Goes Alves / Bruno Ferreira","value":157152,"stage":"qualificacao","priority":"media","nextAction":"Visita com Bruno - reativar projeto","nextDate":"2026-04-16","notes":"16.04.26 - Visita com Bruno reativar projeto | 12.08.25 - Sem Budget transferido para BF","history":[],"createdAt":"2026-04-16"},{"id":"44","title":"EBT-72-1350 BLU + EBT-92-4000 BLU — Norbar","company":"Sotreq - Manaus","contact":"Agenor Monteiro","value":310729,"stage":"proposta","priority":"alta","nextAction":"FUP sem retorno","nextDate":"2026-02-25","notes":"25.02.26 - FUP sem retorno | 20.05.25 - NR19846.25SP_DC","history":[],"createdAt":"2026-04-16"},{"id":"45","title":"Chave de Impacto 140Nm IDS 18V-200T — Bosch PT","company":"Sotreq - Sumaré","contact":"Guilherme Anhani / João Alves","value":4299,"stage":"proposta","priority":"media","nextAction":"Visita pré agendada","nextDate":"2026-04-03","notes":"03.04.26 - Visita pré agendada | 25.02.26 - Rodrigo se desligou - agora João Alves","history":[],"createdAt":"2026-04-16"},{"id":"46","title":"EvoTorque EBT-C-1100 — Norbar","company":"Sotreq - Sumaré","contact":"Guilherme Anhani / João Alves","value":84349,"stage":"proposta","priority":"media","nextAction":"Visita pré agendada","nextDate":"2026-03-04","notes":"04.03.26 - Visita pré agendada | 09.05.25 - NR16747.23SP2","history":[],"createdAt":"2026-04-16"},{"id":"47","title":"Lista de ferramentas a bateria — Milwaukee","company":"Sotreq - Sumaré","contact":"Rodrigo Teixeira / Felipe","value":0,"stage":"pos_venda","priority":"alta","nextAction":"Conta ativa recorrente — pedidos contínuos","nextDate":"","notes":"Conta ativa recorrente — pedidos contínuos Milwaukee","history":[],"createdAt":"2026-04-16"},{"id":"48","title":"Manutenção Motoniveladora — 3arm","company":"Sotreq - Sumaré","contact":"João Alves","value":0,"stage":"qualificacao","priority":"baixa","nextAction":"Ver processo","nextDate":"2026-04-15","notes":"15.04.26 - Ver processo | 01.04.26 - Oportunidade identificada","history":[],"createdAt":"2026-04-16"}];
+const DEMO = [
+  {id:"1",title:"MES NOMUDA — linha de montagem",company:"Honda",contact:"Eng. Carlos Mota",value:180000,stage:"diagnostico",priority:"alta",nextAction:"Apresentar demo NOMUDA na planta",nextDate:"2026-04-20",notes:"Interesse em rastreabilidade de torque. Linha atual sem MES.",history:[],createdAt:"2026-04-10"},
+  {id:"2",title:"Tecnologia de aperto linha chassis",company:"Caterpillar",contact:"Dir. Paulo Reis",value:320000,stage:"proposta",priority:"alta",nextAction:"Enviar proposta com análise Cp/Cpk",nextDate:"2026-04-18",notes:"Engenharia aprovou spec. Compras aguarda aprovação.",history:[],createdAt:"2026-04-05"},
+  {id:"3",title:"Sistema supervisório + SCADA",company:"Jacto",contact:"Eng. Ana Lima",value:95000,stage:"qualificacao",priority:"media",nextAction:"Visita técnica ao chão de fábrica",nextDate:"2026-04-25",notes:"Migração de sistema legado.",history:[],createdAt:"2026-04-12"},
+  {id:"4",title:"Implantação MES NOMUDA completo",company:"Rumo",contact:"Ger. Roberto Nunes",value:210000,stage:"negociacao",priority:"alta",nextAction:"Reunião de negociação com diretoria",nextDate:"2026-04-17",notes:"Concorrente Atlas no jogo.",history:[],createdAt:"2026-03-28"},
+  {id:"5",title:"Ferramentas de aperto pneumáticas",company:"Baldan",contact:"Comp. Marcos Silva",value:42000,stage:"prospeccao",priority:"baixa",nextAction:"Cold call para agendar visita",nextDate:"2026-04-30",notes:"Indicação via Jacto.",history:[],createdAt:"2026-04-14"},
+  {id:"6",title:"Integração MES + ERP SAP",company:"Electrolux",contact:"Dir. TI Fernanda Costa",value:155000,stage:"fechamento",priority:"alta",nextAction:"Assinar contrato e definir kick-off",nextDate:"2026-04-19",notes:"Aprovação confirmada. Aguarda assinatura jurídica.",history:[],createdAt:"2026-03-20"},
+];
 
 const PRI_BG  = {alta:"#FCEBEB",media:"#FAEEDA",baixa:"#EAF3DE"};
 const PRI_TXT = {alta:"#791F1F",media:"#633806",baixa:"#27500A"};
 const STORAGE_KEY = "crm_industrial_v2";
+const CLIENTS = [{"alias":"BALDAN - MATÃO","name":"BALDAN IMPLEMENTOS AGRICOLAS S A","city":"MATÃO","state":"SP","segment":"IMPLEMENTOS AGRÍCOLAS","contacts":[{"name":"Fernando Martins","role":"ENGENHARIA DE PROCESSOS - ÁVOLA","tel":"016-32216500","cel":"014-99755-1717","email":"flmartins@baldan.com.br"},{"name":"Ivaldo Junior","role":"ENGENHARIA DE PROCESSOS","tel":"016-32216500","cel":"016-99730-3272","email":"ipsjunior@baldan.com.br"},{"name":"André Castro","role":"GERENTE DE ENGENHARIA","tel":"016-32216500","cel":"016-98176-0928","email":"alcastro@baldan.com.br"}]},{"alias":"BRUDEN - LINCE","name":"BRUDDEN DA AMAZONIA LTDA","city":"POMPEIA","state":"SP","segment":"MOTOCICLETA ELETRICA","contacts":[{"name":"Bruno Gavassi","role":"COMPRADOR","tel":"14-3405-5000","cel":"014-981299511","email":"bruno.gavassi@ridelince.com"},{"name":"Juan Infante","role":"ENGENHARIA DE PROCESSOS","tel":"14-3405-5000","cel":"014-981620639","email":"juan.infante@ridelince.com"},{"name":"Anderson Rodrigues","role":"ENGENHARIA DE PROCESSOS","tel":"14-3405-5000","cel":"014-991322082","email":"anderson.rodrigues@ridelince.com"},{"name":"Marcio Yamaki","role":"ENGENHARIA DE PROCESSOS","tel":"","cel":"","email":"marcio.yamaki@brudden.com.br"},{"name":"Johnatha Santos","role":"ENGENHARIA DE PROCESSOS","tel":"","cel":"","email":"johnatha.santos@brudden.com.br"},{"name":"Carlos Susumu","role":"DIRETOR","tel":"","cel":"092-994781490","email":"manaus@brudden.com.br"}]},{"alias":"CAIO INDUSCAR","name":"CAIO INDUSCAR INDUSTRIA E COMERCIO DE CARROCERIAS","city":"BOTUCATU","state":"SP","segment":"AUTOMOTIVO - AUTOPEÇAS","contacts":[{"name":"Reinaldo Lafao","role":"ENG. PROCESSOS - CHEFE","tel":"014-31123396","cel":"","email":"reinaldolafao@caio.com.br"},{"name":"Alessandra Lourenço","role":"ENG. PROCESSOS","tel":"014-31123328","cel":"","email":"alessandra@caio.com.br"},{"name":"Luiz Gustavo Yamashita","role":"ENG. PROCESSOS","tel":"014-31121000","cel":"","email":"luiz.yamashita@caio.com.br"},{"name":"Anthony Espitia","role":"ENG. PROCESSOS","tel":"014-31121000","cel":"014-981113389","email":"anthony.espitia@caio.com.br"},{"name":"Elder Severino","role":"ENG. PROCESSOS","tel":"014-31123396","cel":"","email":"elder.severino@caio.com.br"},{"name":"Leandro Augusto Netto","role":"MÉTODOS E PROCESSOS","tel":"014-31123396","cel":"","email":"leandro.netto@caio.com.br"},{"name":"Henrique Baeta","role":"ENG. PROCESSOS","tel":"","cel":"014-997384457","email":"henrique.baeta@caio.com.br"}]},{"alias":"CATERPILLAR","name":"CATERPILLAR BRASIL LTDA","city":"PIRACICABA","state":"SP","segment":"AUTOMOTIVO - MONTADORA","contacts":[{"name":"Agnaldo Rivoltine","role":"ENG. PROCESSOS","tel":"019-21062895","cel":"019-982036602","email":"revoltine_agnaldo_n@cat.com"},{"name":"Marcos Firmino","role":"PROCESSISTA","tel":"019-21063172","cel":"019-991774002","email":"fermino_marcos_r@cat.com"},{"name":"Marcio Domingues Junior","role":"PROCESSISTA","tel":"019-21063172","cel":"019-995535296","email":"domingues_junior_marcio@cat.com"},{"name":"Renato Furtado","role":"ANALISTA PLANEJAMENTO DE OPERAÇÕES","tel":"019-2106-3350","cel":"019-994598901","email":"furtado_renato_a@cat.com"},{"name":"Claudinei Vieira Santos","role":"SUP ENGENHARIA DE PROCESSOS","tel":"019-21061192","cel":"019-982356110","email":"santos_claudinei_v@cat.com"},{"name":"Daciano Stenico Junior","role":"ENGENHARIA - PROCESSISTA","tel":"019-21063172","cel":"","email":"daciano.stenicojunior@cat.com"}]},{"alias":"DEDINI BASE","name":"DEDINI S/A INDUSTRIAS DE BASE","city":"PIRACICABA","state":"SP","segment":"METALURGICA","contacts":[{"name":"Fernanda Pupin","role":"COMPRADORA","tel":"19-3403-3222","cel":"014-996044964","email":"fernanda.pupin@dedini.com.br"}]},{"alias":"DSM BROTAS","name":"DSM PRODUTOS NUTRICIONAIS BRASIL S/A","city":"BROTAS","state":"SP","segment":"NUTRIÇÃO","contacts":[{"name":"Heitor Claudino","role":"TEC. MANUTENÇÃO","tel":"014-36548600","cel":"019-986076392","email":"heitor.claudino@dsm-firmenich.com"},{"name":"Sergio Rodrigues De Lima","role":"LIDER DE MANUTENÇÃO","tel":"014-36548600","cel":"","email":"sergio.rodrigues-de-lima@dsm.com"},{"name":"Murilo Pracucci","role":"ENGENHEIRO DE MANUTENÇÃO","tel":"014-36548600","cel":"","email":"murilo.pracucci@dsm-firmenich.com"}]},{"alias":"ELECTROLUX - SÃO CARLOS","name":"ELECTROLUX DO BRASIL S/A","city":"SÃO CARLOS","state":"SP","segment":"ELETRODOMESTICOS","contacts":[{"name":"Carlos C. Sousa Ferreira","role":"ENG. PROCESSOS","tel":"016-21065332","cel":"016-33726122","email":"carlos.ferreira@electrolux.com.br"},{"name":"Marcio Novo","role":"ENG. MANUFATURA","tel":"016-21065293","cel":"016-994043103","email":"marcio.novo@electrolux.com.br"},{"name":"Eder Santanin","role":"ANALISTA DE PROCESSO","tel":"016-21065293","cel":"016-996196148","email":"eder.santanin@electrolux.com"},{"name":"John Kennedy Silva","role":"ANALISTA DE PROCESSO","tel":"016-21065293","cel":"016-994190563","email":"john.silva@electrolux.com"},{"name":"Ronaldo Custódio","role":"ENGENHARIA DE PROCESSOS","tel":"016-21065293","cel":"016-981389360","email":"ronaldo.custodio@electrolux.com"},{"name":"Cleiton Rúbio","role":"KAIZEN - MELHORIAS DE PROCESSO","tel":"","cel":"","email":"cleiton.rubio@electrolux.com"}]},{"alias":"EMBRAER - GPX","name":"EMBRAER - EMPRESA BRASILEIRA DE AERONÁUTICA S.A.","city":"GAVIÃO PEIXOTO","state":"SP","segment":"AERONAUTICA","contacts":[{"name":"Roberto Nepomuceno","role":"ENG. PROCESSOS","tel":"016-33389936","cel":"016-997064126","email":"roberto.nepomuceno@embraer.com.br"},{"name":"Tadeu Sato Taketomi","role":"ENG. MANUFATURA - SUPERVISOR","tel":"016-33389379","cel":"016-996133591","email":"tadeu.taketomi@embraer.com.br"},{"name":"Gilberto Castro","role":"ENG. ENGENHARIA - GERENTE","tel":"016-33389226","cel":"016-997187514","email":"gilberto.castro@embraer.com.br"},{"name":"Paulo Henrique Gonzaga","role":"PRODUÇÃO - SUPERVISOR - ASA KC-390","tel":"016-33389511","cel":"016-991811997","email":"paulo.gonzaga@embraer.com.br"},{"name":"Eduardo Bizeli","role":"ENG. MANUFATURA","tel":"","cel":"","email":""},{"name":"Asley Ribeiro","role":"SUPRIMENTOS INDIRETOS - ANALISTA","tel":"016-33389188","cel":"","email":"asley.ribeiro@embraer.com.br"}]},{"alias":"EMBRAER - BOT","name":"EMBRAER S.A.","city":"BOTUCATU","state":"SP","segment":"AERONAUTICA","contacts":[{"name":"Fabio Zenebon","role":"ENGENHARIA","tel":"012-39274756","cel":"","email":"fabio.tank@embraer.com.br"},{"name":"Leife Zaia","role":"ENGENHARIA","tel":"","cel":"","email":""}]},{"alias":"GWM BRASIL","name":"GREAT WALL MOTOR BRASIL LTDA","city":"IRACEMÁPOLIS","state":"SP","segment":"AUTOMOTIVO - MONTADORA","contacts":[{"name":"Cesar Augusto Porsebon","role":"COMPRADOR ASSEMBLY SHOP","tel":"0800 838 8000","cel":"19-998261540","email":"cesar.porsebon@gwmmotors.com.br"},{"name":"Bruno Miranda","role":"ENGENHARIA DE PROCESSOS","tel":"0800-8388000","cel":"019-993467602","email":"bruno.miranda@gwmmotors.com.br"},{"name":"Marcelo Santos","role":"SUPERVISOR MANUTENÇÃO","tel":"","cel":"12-996437183","email":"m.santos@gwmmotors.com.br"},{"name":"Paulo Pila","role":"ANALISTA MANUTENÇÃO APERTADEIRAS","tel":"","cel":"12-981144948","email":"paulo.pila@gwmmotors.com.br"},{"name":"Diego Correa","role":"COMPRADOR INDIRETO","tel":"","cel":"19-992209146","email":"diego.correa@gwmmotors.com.br"},{"name":"Jeferson Rosa","role":"COMPRAS","tel":"0800 838 8000","cel":"024-998273092","email":"jeferson.rosa@gwmmotors.com.br"},{"name":"Marcio Nakamura","role":"ENGENHARIA DE PROCESSOS","tel":"0800 838 8000","cel":"011-995786148","email":"marcio.nakamura@gwmmotors.com.br"}]},{"alias":"HONDA - SUMARÉ","name":"HONDA AUTOMOVEIS DO BRASIL LTDA","city":"SUMARÉ","state":"SP","segment":"AUTOMOTIVO - MONTADORA","contacts":[{"name":"Fabio Azazias","role":"MANUTENÇÃO MOTORES","tel":"","cel":"019-974095689","email":"fabio_azazias@honda.com.br"},{"name":"Eduardo Dias","role":"SUP MANUTENÇÃO MONTAGEM FINAL","tel":"","cel":"019-984272255","email":"eduardo_dias@honda.com.br"},{"name":"Marcio De Carvalho Miranda","role":"CHEFE DA MANUTENÇÃO","tel":"","cel":"","email":"marcio_miranda@honda.com.br"}]},{"alias":"HONDA - ITIRAPINA","name":"HONDA AUTOMOVEIS DO BRASIL LTDA","city":"ITIRAPINA","state":"SP","segment":"AUTOMOTIVO - MONTADORA","contacts":[{"name":"Bruno Rogerio Vieira","role":"PROCESSISTA DE APERTOS MONTAGEM FINAL","tel":"","cel":"019-984246710","email":"bruno_vieira@honda.com.br"},{"name":"José Roberto","role":"ENCARREGADO SOLDA","tel":"+55 19 99307-6996","cel":"019-993076996","email":""},{"name":"Antonio Paulino Da Silva (Tony)","role":"PROCESSISTA MONTAGEM FINAL","tel":"","cel":"","email":""},{"name":"Silvio Yabiku","role":"SUPERVISOR PRODUÇÃO","tel":"","cel":"","email":"meiji_imayuki@honda.com.br"},{"name":"Danilo Souza De Matos","role":"ENG. AUTOMAÇÃO - KARAKURY","tel":"","cel":"019-982646478","email":"danilo_matos@honda.com.br"},{"name":"Andre Luis Dos Santos","role":"ENGENHEIRO DE QUALIDADE (CHEFE)","tel":"","cel":"019-982480166","email":"andre_santos@honda.com.br"}]},{"alias":"HUSQVARNA","name":"HUSQVARNA DO BRASIL","city":"SÃO CARLOS","state":"SP","segment":"MONTAGEM","contacts":[{"name":"Alexandre Varoto","role":"GERENTE DE ENGENHARIA","tel":"","cel":"","email":"alexandre.varoto@husqvarnagroup.com"},{"name":"Lilian Aparecida","role":"COMPRADORA","tel":"","cel":"16 996129534","email":"lilian.a.aparecida@husqvarnagroup.com"}]},{"alias":"HYUNDAI - BRASIL","name":"HYUNDAI MOTOR BRASIL MONTADORA DE AUTOMOVEIS LTDA","city":"PIRACICABA","state":"SP","segment":"AUTOMOTIVO - MONTADORA","contacts":[{"name":"Mateus Fernandes","role":"ALMOXARIFADO FERRAMENTAS","tel":"019-33730964","cel":"019-988450027","email":"mateus.fernandes@hyundai-brasil.com"},{"name":"Paulo Roberto Cavina","role":"ENG DE PROCESSOS MONTAGEM","tel":"","cel":"019-996967122","email":"paulo.cavina@hyundai-brasil.com"},{"name":"Gleidison Silva","role":"ENG DE PROCESSOS - SOLDA","tel":"","cel":"","email":""},{"name":"Thiago Franco","role":"ENGENHARIA DE PROCESSOS","tel":"019-33731128","cel":"019-999115150","email":"thiago.franco@mobis.com"},{"name":"Matheus Damaceno","role":"ENGENHARIA PRODUÇÃO","tel":"","cel":"","email":"matheus.damaceno@hyundai-brasil.com"},{"name":"Gabriela Gebara Bello","role":"COMPRADORA","tel":"19 3373-1256","cel":"","email":"gabriela.bello@hyundai-brasil.com"}]},{"alias":"INRODA - AVARÉ","name":"INRODA INDUSTRIA DE ROÇADEIRA E DESBRAVADOR AVARÉ LTDA","city":"AVARÉ","state":"SP","segment":"IMPLEMENTOS AGRÍCOLAS","contacts":[{"name":"Gustavo Guimarães Lorusso","role":"COMPRAS","tel":"014-37113000","cel":"014-998311998","email":"gustavo.lorusso@inroda.com.br"},{"name":"Felipe Nonose","role":"LIDER MONTAGEM","tel":"014-37113000","cel":"014 996363932","email":"felipe.nonose@inroda.com.br"},{"name":"Mateus Moises","role":"ENGENHARIA DE PROCESSO","tel":"014-37113000","cel":"014-998109059","email":"mateus.moises@inroda.com.br"}]},{"alias":"JACTO - POMPEIA","name":"MÁQUINAS AGRICOLAS JACTO S A","city":"POMPEIA","state":"SP","segment":"IMPLEMENTOS AGRÍCOLAS","contacts":[{"name":"Lucas Leme Siqueira","role":"ÁREA DE APOIO - ANALISTA","tel":"014-997446974","cel":"014-997446974","email":"lucas.siqueira@jacto.com.br"},{"name":"Fabricio Prado De Almeida","role":"AUXILIAR DE ESCRITÓRIO","tel":"","cel":"","email":"fabricio.almeida01@jacto.com.br"},{"name":"Bruno Fonseca Guerra","role":"ENGENHARIA INDUSTRIAL","tel":"","cel":"14-998667776","email":"bruno.guerra@jacto.com.br"},{"name":"Olavo De Oliveira Flauzino","role":"ENGENHARIA INDUSTRIAL","tel":"","cel":"","email":"olavo.flauzino@jacto.com.br"},{"name":"Karen Neve","role":"COMPRAS - PEÇAS","tel":"014-3405-7343","cel":"014-996244288","email":"karen.neves@jacto.com.br"},{"name":"Thiago Albertin","role":"RESPONSÁVEL POR MANUTENÇÃO","tel":"014-3405-7343","cel":"014 99609-0468","email":"thiago.albertin@jacto.com.br"},{"name":"Rodrigo Oliveira","role":"ENG. PROCESSOS - AGRO","tel":"","cel":"","email":""}]},{"alias":"JACTO - UNIPAC","name":"MÁQUINAS AGRICOLAS JACTO S A - UNIPAC","city":"POMPEIA","state":"SP","segment":"IMPLEMENTOS AGRÍCOLAS","contacts":[{"name":"João Pedro Vancim Moreira","role":"ENGENHARIA INDUSTRIAL - UNIPARTS","tel":"","cel":"","email":"joao.moreira@jacto.com.br"},{"name":"Mario Henrique Duarte De Souza","role":"ENGENHARIA INDUSTRIAL - UNIPARTS","tel":"","cel":"","email":"mario.souza@jacto.com.br"},{"name":"Pedro Antonio Massaharu Nishioka","role":"ENGENHARIA INDUSTRIAL","tel":"","cel":"","email":"pedro.nishioka@jacto.com.br"},{"name":"Fernando Rodnei Prando Dos Santos","role":"COMPRAS EQUIPAMENTOS","tel":"","cel":"14-997275037","email":"fernando.prando@jacto.com.br"}]},{"alias":"TATU - MATÃO","name":"MARCHESAN IMPLEMENTOS E MÁQUINAS AGRÍCOLAS TATU S/A","city":"MATÃO","state":"SP","segment":"IMPLEMENTOS AGRÍCOLAS","contacts":[{"name":"Elizeu José Da Silva","role":"ENGENHEIRO DE PROCESSO","tel":"(16) 3382-8282","cel":"016-997129486","email":"ejsilva@marchesan.com.br"},{"name":"Anderson Rodrigues","role":"ENGENHARIA DE PROCESSO","tel":"(16) 3382-8282","cel":"016-997998823","email":"aerodrigues@marchesan.com.br"},{"name":"Andressa Griscio","role":"COMPRADORA","tel":"(16) 3382-8282","cel":"","email":"amgriscio@marchesan.com.br"}]},{"alias":"RAÍZEN - BARRA","name":"RAIZEN ENERGIA S/A - BARRA BONITA","city":"BARRA BONITA","state":"SP","segment":"AÇUCAR E ALCOOL","contacts":[{"name":"Marcio Barbosa","role":"SUPERVISOR MANUTENÇÃO","tel":"","cel":"067-996377183","email":"marcio.barbosa@raizen.com"},{"name":"André Borghi","role":"GO MANUTENÇÃO INDUSTRIAL","tel":"","cel":"016-997336053","email":"andre.borghi@raizen.com"},{"name":"Tiago Novais","role":"GO MANUTENÇÃO INDUSTRIAL","tel":"","cel":"","email":"tiago.novais@raizen.com"}]},{"alias":"RUMO ARARAQUARA","name":"RUMO MALHA PAULISTA AS","city":"ARARAQUARA","state":"SP","segment":"TRANSPORTE FERROVIÁRIO","contacts":[{"name":"Bruno Ferreira","role":"LIDER MANUTENÇÃO","tel":"019-34238000","cel":"016-991337643","email":"bruno.ferreira@rumolog.com"},{"name":"Izabela Goes Alves","role":"LIDER MANUTENÇÃO - MOTORES","tel":"019-34238000","cel":"041-988305706","email":"izabela.alves@rumolog.com"},{"name":"Maria Angelica Tavares Jayme","role":"COMPRADORA INDIRETOS","tel":"067-993098431","cel":"067-993098431","email":"melissa.cruz@rumolog.com"},{"name":"Debora Rodrigues Benetti Martini","role":"COMPRAS","tel":"019-34238000","cel":"041-988662062","email":"debora.martini@rumolog.com"}]},{"alias":"IMEDIATO - BROTAS","name":"TRANSPORTE IMEDIATO S/A","city":"BROTAS","state":"SP","segment":"LOGISTICO","contacts":[{"name":"Ricardo Pedro Peres","role":"GESTOR MANUTENÇÃO FROTA","tel":"14-997498787","cel":"014-997498787","email":"pedro.peres@imediatonexway.com.br"},{"name":"Álvaro Silva","role":"SUPERVISOR FROTA","tel":"","cel":"014-997498787","email":"alvaro.silva@imediatonexway.com.br"},{"name":"Ailton Camilo","role":"GERENTE FROTA","tel":"11-984133791","cel":"011-984133791","email":""}]},{"alias":"ARCELORMITTAL","name":"ARCELORMITTAL BRASIL S.A","city":"PIRACICABA","state":"SP","segment":"MINERAÇÃO","contacts":[{"name":"Rafael Martins","role":"SUPERVISOR DE PRODUÇÃO","tel":"","cel":"19-991353231","email":"rafael.m@arcelormittal.com.br"}]},{"alias":"TECUMSEH","name":"TECUMSEH DO BRASIL LTDA.","city":"SÃO CARLOS","state":"SP","segment":"AUTOMOTIVO - AUTOPEÇAS","contacts":[{"name":"Fernando Paciência Bonadio","role":"CHEFE DE PRODUÇÃO","tel":"016-333623052","cel":"016-2611286","email":"fbonadio@tecumseh.com.br"},{"name":"Celso Henrique Cardoso","role":"ENG. PROCESSOS","tel":"016-33623072","cel":"016-997266964","email":"celso.cardoso@tecumseh.com"},{"name":"Valdenir Vando Tacin","role":"ENG. PROCESSOS - CRONOANALISTA","tel":"016-33623003","cel":"016-2611286","email":"vtacin@tecumseh.com.br"}]},{"alias":"S. MARTINHO - PRA","name":"USINA SÃO MARTINHO S/A","city":"PRADÓPOLIS","state":"SP","segment":"AÇUCAR E ALCOOL","contacts":[{"name":"Claudio Neves","role":"SEGURANÇA DO TRABALHO","tel":"","cel":"016-996205883","email":"claudio.neves@saomartinho.com.br"},{"name":"Giovani Paulosse","role":"SUPERVISOR DE MANUTENÇÃO","tel":"","cel":"016-99768-8857","email":"giovani.paulosse@saomartinho.com.br"}]},{"alias":"WEG TURBINAS","name":"WEG TURBINAS E SOLAR LTDA","city":"SERTÃOZINHO","state":"SP","segment":"TURBINAS","contacts":[{"name":"Silvio Eduardo De Souza","role":"COMPRAS","tel":"16 2105-2630","cel":"","email":"sesouza@weg.net"},{"name":"Leandro Moreira","role":"COMPRAS","tel":"16 2105-2587","cel":"","email":"moreiral@weg.net"}]},{"alias":"HUTCHISON","name":"HBA HUTCHINSON BRASIL AUTOMOTIVE LTDA","city":"MONTE ALTO","state":"SP","segment":"AUTOMOTIVO - AUTOPEÇAS","contacts":[{"name":"Paulo Bassi","role":"ENGENHARIA","tel":"016-32443558","cel":"016-991643471","email":"paulo.bassi@hutchinson.com"},{"name":"Daniel Martins","role":"COORDENADOR INDUSTRIAL","tel":"016-32443558","cel":"016-996274434","email":"daniel.martins@hutchison.com"},{"name":"Antonio Mario Donato","role":"GERENTE INDUSTRIAL","tel":"016-32443558","cel":"016-981210165","email":"antonio.donato@hutchison.com"}]}];
 const KEY_STORE   = "crm_api_key";
 
 const SYS_PROMPT = `Você é o Gestor Comercial IA de uma empresa B2B industrial brasileira especializada em:
@@ -63,6 +89,12 @@ function App() {
   const [opps, setOpps]           = useState(() => loadData() || DEMO);
   const [sel, setSel]             = useState(null);
   const [view, setView]           = useState("kanban");
+  const PIPE_VIEW_KEY = "crm_pipe_view";
+  const [pipelineView, setPipelineView] = useState(() => localStorage.getItem("crm_pipe_view") || "kanban");
+  function setPipeView(v){ setPipelineView(v); localStorage.setItem("crm_pipe_view",v); }
+  const [forecastFilter, setForecastFilter] = useState("todos");
+  const [sortCol, setSortCol] = useState("confidence");
+  const [sortDir, setSortDir] = useState("desc");
   const [aiOpen, setAiOpen]       = useState(false);
   const [aiMsgs, setAiMsgs]       = useState([]);
   const [aiInput, setAiInput]     = useState("");
@@ -71,8 +103,69 @@ function App() {
   const [showKey, setShowKey]     = useState(false);
   const [keyDraft, setKeyDraft]   = useState("");
   const [newModal, setNewModal]   = useState(false);
-  const [form, setForm]           = useState({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:""});
+  const [form, setForm]           = useState({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1});
   const aiEnd = useRef(null);
+
+  // PERFIL
+  const PROFILE_KEY = "crm_profile_v1";
+  const [profile, setProfile] = useState(() => { try { const r=localStorage.getItem(PROFILE_KEY); return r?JSON.parse(r):{companyName:"Sinuelo Torque+Controle",userName:"Elieser Fernandes",role:"Gestor Comercial",email:"",linkedin:"",phone:"",photo:"",region:"SP"}; } catch { return {}; }});
+  const [profileEdit, setProfileEdit] = useState(false);
+  const [profileDraft, setProfileDraft] = useState({});
+  function saveProfile(p){ setProfile(p); try{ localStorage.setItem(PROFILE_KEY,JSON.stringify(p)); }catch{} setProfileEdit(false); }
+
+  // BUDGET
+  const BUDGET_KEY = "crm_budget_v1";
+  const [budgets, setBudgets] = useState(() => { try { const r=localStorage.getItem(BUDGET_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
+  const [budgetModal, setBudgetModal] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({client:"",supplier:"",target:0,realized:0,year:new Date().getFullYear(),notes:""});
+  function saveBudgets(b){ setBudgets(b); try{ localStorage.setItem(BUDGET_KEY,JSON.stringify(b)); }catch{}; }
+  function addBudget(){ if(!budgetForm.client) return; saveBudgets([...budgets,{...budgetForm,id:Date.now(),target:Number(budgetForm.target),realized:Number(budgetForm.realized)}]); setBudgetForm({client:"",supplier:"",target:0,realized:0,year:new Date().getFullYear(),notes:""}); setBudgetModal(false); }
+  function delBudget(id){ saveBudgets(budgets.filter(b=>b.id!==id)); }
+
+  // PÓS VENDA
+  const POSV_KEY = "crm_posvendas_v1";
+  const [posVendas, setPosVendas] = useState(() => { try { const r=localStorage.getItem(POSV_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
+  const [posModal, setPosModal] = useState(false);
+  const [posForm, setPosForm] = useState({client:"",contact:"",nf:"",po:"",orcamento:"",deliveryDate:"",status:"pendente",deliveryType:"total",value:0,notes:"",issue:""});
+  function savePosVendas(p){ setPosVendas(p); try{ localStorage.setItem(POSV_KEY,JSON.stringify(p)); }catch{}; }
+  function addPosVenda(){ if(!posForm.client) return; savePosVendas([...posVendas,{...posForm,id:Date.now(),value:Number(posForm.value)}]); setPosForm({client:"",contact:"",nf:"",po:"",orcamento:"",deliveryDate:"",status:"pendente",deliveryType:"total",value:0,notes:"",issue:""}); setPosModal(false); }
+  function delPosVenda(id){ savePosVendas(posVendas.filter(p=>p.id!==id)); }
+  function updatePosVenda(upd){ savePosVendas(posVendas.map(p=>p.id===upd.id?upd:p)); }
+
+  // ORÇAMENTOS
+  const ORC_KEY = "crm_orcamentos_v1";
+  const [orcamentos, setOrcamentos] = useState(() => { try { const r=localStorage.getItem(ORC_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
+  const [orcModal, setOrcModal] = useState(false);
+  const [orcForm, setOrcForm] = useState({number:"",client:"",contact:"",supplier:"",value:0,date:"",status:"aberto",oppId:"",notes:"",fileName:""});
+  function saveOrcamentos(o){ setOrcamentos(o); try{ localStorage.setItem(ORC_KEY,JSON.stringify(o)); }catch{}; }
+  function addOrcamento(){ if(!orcForm.number||!orcForm.client) return; saveOrcamentos([...orcamentos,{...orcForm,id:Date.now(),value:Number(orcForm.value)}]); setOrcForm({number:"",client:"",contact:"",supplier:"",value:0,date:"",status:"aberto",oppId:"",notes:"",fileName:""}); setOrcModal(false); }
+  function delOrcamento(id){ saveOrcamentos(orcamentos.filter(o=>o.id!==id)); }
+
+  // PROJETOS
+  const PROJ_KEY = "crm_projetos_v1";
+  const [projetos, setProjetos] = useState(() => { try { const r=localStorage.getItem(PROJ_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
+  const [projModal, setProjModal] = useState(false);
+  const [projForm, setProjForm] = useState({name:"",client:"",type:"braco_gravidade",description:"",dimensions:"",material:"",status:"em_andamento",deadline:"",engResp:"",notes:"",drawingRef:""});
+  function saveProjetos(p){ setProjetos(p); try{ localStorage.setItem(PROJ_KEY,JSON.stringify(p)); }catch{}; }
+  function addProjeto(){ if(!projForm.name) return; saveProjetos([...projetos,{...projForm,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}]); setProjForm({name:"",client:"",type:"braco_gravidade",description:"",dimensions:"",material:"",status:"em_andamento",deadline:"",engResp:"",notes:"",drawingRef:""}); setProjModal(false); }
+  function delProjeto(id){ saveProjetos(projetos.filter(p=>p.id!==id)); }
+
+  // TEMA
+  const THEME_KEY = "crm_theme_v1";
+  const getSystemTheme = () => window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const [themePref, setThemePref] = useState(() => localStorage.getItem(THEME_KEY) || "dark");
+  const resolvedTheme = themePref === "system" ? getSystemTheme() : themePref;
+  useEffect(() => {
+    document.body.classList.remove("theme-dark","theme-light");
+    document.body.classList.add("theme-" + (themePref==="system" ? getSystemTheme() : themePref));
+    localStorage.setItem(THEME_KEY, themePref);
+  }, [themePref]);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => { if(themePref==="system"){ document.body.classList.remove("theme-dark","theme-light"); document.body.classList.add("theme-"+(mq.matches?"dark":"light")); }};
+    mq.addEventListener("change",handler);
+    return () => mq.removeEventListener("change",handler);
+  }, [themePref]);
 
   useEffect(() => { saveData(opps); }, [opps]);
   useEffect(() => { aiEnd.current?.scrollIntoView({behavior:"smooth"}); }, [aiMsgs]);
@@ -99,7 +192,7 @@ function App() {
     const o = {...form, id:Date.now().toString(), value:Number(form.value)||0, history:[], createdAt:new Date().toISOString().slice(0,10)};
     setAndSave([...opps, o]);
     setNewModal(false);
-    setForm({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:""});
+    setForm({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1});
   }
 
   function delOpp(id) { setAndSave(opps.filter(o=>o.id!==id)); setSel(null); }
@@ -178,25 +271,25 @@ function App() {
   const overdue  = opps.filter(o=>o.nextDate&&o.nextDate<today).length;
   const highPri  = opps.filter(o=>o.priority==="alta").length;
 
-  const inp = {width:"100%",fontSize:"12px",padding:"7px 9px",borderRadius:"6px",border:"1px solid #ddd",background:"#fafafa",color:"#1a1a1a",boxSizing:"border-box"};
-  const lbl = {fontSize:"11px",color:"#888",marginBottom:"3px",display:"block",textTransform:"uppercase",letterSpacing:"0.05em"};
+  const inp = {width:"100%",fontSize:"12px",padding:"7px 9px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-input)",color:"var(--text-primary)",boxSizing:"border-box"};
+  const lbl = {fontSize:"11px",color:"var(--text-secondary)",marginBottom:"3px",display:"block",textTransform:"uppercase",letterSpacing:"0.05em"};
   const btn = (bg,tc,bc) => ({padding:"6px 12px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${bc||bg}`,background:bg,color:tc,cursor:"pointer",fontWeight:500});
 
   return (
-    <div style={{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:"#1a1a1a",background:"#f5f5f3",minHeight:"100vh"}}>
+    <div style={{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:"var(--text-primary)",background:"var(--bg-app)",minHeight:"100vh"}}>
 
       {/* HEADER */}
-      <div style={{background:"#fff",borderBottom:"1px solid #e8e8e8",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",position:"sticky",top:0,zIndex:20}}>
+      <div style={{background:"var(--bg-header)",borderBottom:"1px solid var(--border2)",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",position:"sticky",top:0,zIndex:20}}>
         <div style={{display:"flex",alignItems:"center",gap:"8px",flex:1,minWidth:"160px"}}>
-          <div style={{width:"28px",height:"28px",borderRadius:"6px",background:"#185FA5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <div style={{width:"28px",height:"28px",borderRadius:"6px",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#85B7EB"/></svg>
           </div>
-          <span style={{fontWeight:600,fontSize:"15px"}}>CRM Industrial B2B</span>
-          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"#E6F1FB",color:"#0C447C",fontWeight:600}}>3S+M</span>
+          <span style={{fontWeight:600,fontSize:"15px",color:"var(--text-primary)"}}>CRM Industrial B2B</span>
+          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",fontWeight:600}}>3S+M</span>
         </div>
         <div style={{display:"flex",gap:"4px"}}>
-          {[["kanban","Pipeline"],["dashboard","Funil"],["tasks","Follow-ups"]].map(([v,l])=>(
-            <button key={v} onClick={()=>setView(v)} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#185FA5":"#e8e8e8",background:view===v?"#E6F1FB":"transparent",color:view===v?"#0C447C":"#666",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
+          {[["kanban","Pipeline/Forecast"],["dashboard","Funil"],["tasks","Follow-ups"],["clients","Clientes"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"],["perfil","Perfil"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setView(v)} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
           ))}
         </div>
         <button onClick={()=>setNewModal(true)} style={btn("#E1F5EE","#085041","#0F6E56")}>+ Nova oportunidade</button>
@@ -204,10 +297,15 @@ function App() {
         <button onClick={exportData} style={btn("#f5f5f3","#555","#ddd")} title="Exportar backup">↓ Backup</button>
         <label style={{...btn("#f5f5f3","#555","#ddd"),cursor:"pointer"}} title="Importar dados">↑ Importar<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/></label>
         <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);}} style={{...btn("#f5f5f3","#555","#ddd"),fontSize:"11px"}}>⚙ API Key</button>
+        <div style={{display:"flex",gap:"2px",background:"rgba(128,128,128,0.12)",borderRadius:"8px",padding:"3px",marginLeft:"4px"}}>
+          {[["dark","☾"],["system","⊙"],["light","☀"]].map(([t,icon])=>(
+            <button key={t} onClick={()=>setThemePref(t)} title={t==="dark"?"Escuro":t==="light"?"Claro":"Sistema"} style={{padding:"3px 7px",fontSize:"12px",borderRadius:"6px",border:"none",cursor:"pointer",background:themePref===t?"#8C1A1A":"transparent",color:themePref===t?"#fff":"var(--text-secondary)",fontWeight:themePref===t?700:400,transition:"all .15s"}}>{icon}</button>
+          ))}
+        </div>
       </div>
 
       {/* MÉTRICAS */}
-      <div style={{background:"#fff",borderBottom:"1px solid #e8e8e8",padding:"8px 16px",display:"flex",gap:"20px",flexWrap:"wrap"}}>
+      <div style={{background:"#333333",borderBottom:"1px solid #222",padding:"8px 16px",display:"flex",gap:"20px",flexWrap:"wrap"}}>
         {[
           {l:"Pipeline total", v:`R$ ${(totalVal/1000).toFixed(0)}k`},
           {l:"Em pós-venda",   v:`R$ ${(wonVal/1000).toFixed(0)}k`},
@@ -216,8 +314,8 @@ function App() {
           {l:"Atrasados",      v:overdue, warn:overdue>0},
         ].map((m,i)=>(
           <div key={i} style={{display:"flex",gap:"5px",alignItems:"baseline"}}>
-            <span style={{fontSize:"15px",fontWeight:600,color:m.warn?"#E24B4A":"#1a1a1a"}}>{m.v}</span>
-            <span style={{fontSize:"11px",color:"#aaa"}}>{m.l}</span>
+            <span style={{fontSize:"15px",fontWeight:600,color:m.warn?"#FF6B6B":"#F0EDED"}}>{m.v}</span>
+            <span style={{fontSize:"11px",color:"var(--text-secondary)"}}>{m.l}</span>
           </div>
         ))}
       </div>
@@ -227,38 +325,153 @@ function App() {
 
         {/* KANBAN */}
         {view==="kanban" && (
-          <div style={{flex:1,overflowX:"auto"}}>
-            <div style={{display:"flex",gap:"8px",paddingBottom:"8px",minWidth:"max-content"}}>
-              {STAGES.map(stage=>{
-                const cols   = opps.filter(o=>o.stage===stage.id);
-                const colVal = cols.reduce((s,o)=>s+(o.value||0),0);
-                return (
-                  <div key={stage.id} style={{width:"196px",flexShrink:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:"5px",marginBottom:"6px"}}>
-                      <span style={{fontSize:"10px",fontWeight:600,padding:"2px 7px",borderRadius:"10px",background:stage.color+"22",color:stage.color}}>{stage.tag}</span>
-                      <span style={{fontSize:"12px",fontWeight:600,flex:1}}>{stage.label}</span>
-                      <span style={{fontSize:"11px",color:"#bbb"}}>{cols.length}</span>
-                    </div>
-                    {colVal>0 && <div style={{fontSize:"11px",color:"#bbb",marginBottom:"5px"}}>R$ {(colVal/1000).toFixed(0)}k</div>}
-                    <div style={{display:"flex",flexDirection:"column",gap:"6px",minHeight:"60px"}}>
-                      {cols.map(opp=>(
-                        <div key={opp.id} onClick={()=>setSel(opp===sel?null:opp)}
-                          style={{background:"#fff",border:`1px solid ${sel?.id===opp.id?stage.color:"#e8e8e8"}`,borderLeft:`3px solid ${stage.color}`,borderRadius:"0 8px 8px 0",padding:"10px 10px 10px 9px",cursor:"pointer"}}>
-                          <div style={{fontSize:"12px",fontWeight:600,marginBottom:"3px",lineHeight:1.3}}>{opp.title}</div>
-                          <div style={{fontSize:"11px",color:"#888",marginBottom:"7px"}}>{opp.company}</div>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                            <span style={{fontSize:"12px",fontWeight:600}}>R$ {(opp.value/1000).toFixed(0)}k</span>
-                            <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],fontWeight:600}}>{opp.priority}</span>
-                          </div>
-                          {opp.nextDate&&opp.nextDate<today && <div style={{fontSize:"10px",color:"#E24B4A",marginTop:"5px",fontWeight:600}}>Atrasado · {opp.nextDate}</div>}
-                          {opp.nextAction && <div style={{fontSize:"10px",color:"#bbb",marginTop:"3px",lineHeight:1.3}}>{opp.nextAction.slice(0,52)}{opp.nextAction.length>52?"…":""}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+          <div style={{flex:1,minWidth:0}}>
+            {/* Toolbar: toggle kanban/linhas + filtros */}
+            <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"10px",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:"2px",background:"rgba(128,128,128,0.12)",borderRadius:"8px",padding:"3px"}}>
+                {[["kanban","⊞ Kanban"],["lines","≡ Linhas"]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setPipeView(v)} style={{padding:"4px 12px",fontSize:"11px",borderRadius:"6px",border:"none",cursor:"pointer",background:pipelineView===v?"#8C1A1A":"transparent",color:pipelineView===v?"#fff":"var(--text-secondary)",fontWeight:pipelineView===v?700:400,transition:"all .15s"}}>{l}</button>
+                ))}
+              </div>
+              {pipelineView==="lines" && (
+                <>
+                  <select value={forecastFilter} onChange={e=>setForecastFilter(e.target.value)} style={{fontSize:"11px",padding:"4px 8px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-input)",color:"var(--text-primary)",cursor:"pointer"}}>
+                    <option value="todos">Todas etapas</option>
+                    {STAGES.map(s=><option key={s.id} value={s.id}>{s.tag} {s.label}</option>)}
+                    <option value="yellow">🟡 Devemos ao cliente</option>
+                    <option value="red">🔴 Em negociação ativa</option>
+                    <option value="gray">⚫ Perdidos</option>
+                  </select>
+                  <span style={{fontSize:"11px",color:"var(--text-muted)",marginLeft:"4px"}}>
+                    {(()=>{
+                      const filtered = opps.filter(o=>forecastFilter==="todos"||o.stage===forecastFilter||o.forecastColor===forecastFilter);
+                      const tot = filtered.reduce((s,o)=>s+(o.value||0),0);
+                      return `${filtered.length} opp · R$ ${tot.toLocaleString("pt-BR")}`;
+                    })()}
+                  </span>
+                </>
+              )}
             </div>
+
+            {/* KANBAN */}
+            {pipelineView==="kanban" && (
+              <div style={{overflowX:"auto"}}>
+                <div style={{display:"flex",gap:"8px",paddingBottom:"8px",minWidth:"max-content"}}>
+                  {STAGES.map(stage=>{
+                    const cols   = opps.filter(o=>o.stage===stage.id);
+                    const colVal = cols.reduce((s,o)=>s+(o.value||0),0);
+                    return (
+                      <div key={stage.id} style={{width:"196px",flexShrink:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"5px",marginBottom:"6px"}}>
+                          <span style={{fontSize:"10px",fontWeight:600,padding:"2px 7px",borderRadius:"10px",background:stage.color+"22",color:stage.color}}>{stage.tag}</span>
+                          <span style={{fontSize:"12px",fontWeight:600,flex:1,color:"var(--text-primary)"}}>{stage.label}</span>
+                          <span style={{fontSize:"11px",color:"var(--text-muted)"}}>{cols.length}</span>
+                        </div>
+                        {colVal>0 && <div style={{fontSize:"11px",color:"var(--text-muted)",marginBottom:"5px"}}>R$ {(colVal/1000).toFixed(0)}k</div>}
+                        <div style={{display:"flex",flexDirection:"column",gap:"6px",minHeight:"60px"}}>
+                          {cols.map(opp=>(
+                            <div key={opp.id} onClick={()=>setSel(opp===sel?null:opp)}
+                              style={{background:"var(--bg-header)",border:`1px solid ${sel?.id===opp.id?stage.color:"var(--border)"}`,borderLeft:`3px solid ${stage.color}`,borderRadius:"0 8px 8px 0",padding:"10px 10px 10px 9px",cursor:"pointer"}}>
+                              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"3px",lineHeight:1.3,color:"var(--text-primary)"}}>{opp.title}</div>
+                              <div style={{fontSize:"11px",color:"var(--text-secondary)",marginBottom:"7px"}}>{opp.company}</div>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <span style={{fontSize:"12px",fontWeight:600,color:"var(--text-primary)"}}>R$ {(opp.value/1000).toFixed(0)}k</span>
+                                <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],fontWeight:600}}>{opp.priority}</span>
+                              </div>
+                              {opp.nextDate&&opp.nextDate<today && <div style={{fontSize:"10px",color:"#FF7777",marginTop:"5px",fontWeight:600}}>Atrasado · {opp.nextDate}</div>}
+                              {opp.nextAction && <div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"3px",lineHeight:1.3}}>{opp.nextAction.slice(0,52)}{opp.nextAction.length>52?"…":""}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* LINHAS — formato Forecast planilha */}
+            {pipelineView==="lines" && (
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px",minWidth:"900px"}}>
+                  <thead>
+                    <tr style={{background:"var(--bg-card2)",position:"sticky",top:0,zIndex:5}}>
+                      {[["neg","NEG.","40px"],["resp","RESP.","60px"],["company","CUSTOMER","120px"],["supplier","SUPPLIER","90px"],["title","DESCRIPTION","220px"],["value","AMOUNT","90px"],["stage","CONFIDENCE","80px"],["nextDate","FOLLOW-UP","200px"],["contact","CONTATOS","100px"]].map(([key,label,w])=>(
+                        <th key={key} onClick={()=>{ if(sortCol===key){setSortDir(d=>d==="asc"?"desc":"asc");}else{setSortCol(key);setSortDir("desc");} }}
+                          style={{padding:"7px 9px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:`1px solid var(--border)`,cursor:"pointer",whiteSpace:"nowrap",width:w,userSelect:"none"}}>
+                          {label}{sortCol===key?(sortDir==="asc"?" ↑":" ↓"):""}
+                        </th>
+                      ))}
+                      <th style={{padding:"7px 9px",width:"32px"}}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(()=>{
+                      let rows = [...opps];
+                      if(forecastFilter!=="todos") rows = rows.filter(o=>o.stage===forecastFilter||o.forecastColor===forecastFilter);
+                      rows.sort((a,b)=>{
+                        const stageOrder = ["prospeccao","qualificacao","diagnostico","proposta","neg","po_recebido","fechado"];
+                        let av,bv;
+                        if(sortCol==="stage") { av=stageOrder.indexOf(a.stage); bv=stageOrder.indexOf(b.stage); }
+                        else if(sortCol==="value") { av=a.value||0; bv=b.value||0; }
+                        else if(sortCol==="confidence") { av=a.confidence||0; bv=b.confidence||0; }
+                        else { av=(a[sortCol]||"").toString().toLowerCase(); bv=(b[sortCol]||"").toString().toLowerCase(); }
+                        if(av<bv) return sortDir==="asc"?-1:1;
+                        if(av>bv) return sortDir==="asc"?1:-1;
+                        return 0;
+                      });
+                      return rows.map(opp=>{
+                        const stage = STAGES.find(s=>s.id===opp.stage);
+                        const rowBg = opp.forecastColor==="yellow"
+                          ? "rgba(239,159,39,0.12)"
+                          : opp.forecastColor==="red"
+                          ? "rgba(226,75,74,0.12)"
+                          : opp.forecastColor==="gray"
+                          ? "rgba(95,94,90,0.15)"
+                          : "transparent";
+                        const dotColor = opp.forecastColor==="yellow"?"#EF9F27":opp.forecastColor==="red"?"#E24B4A":opp.forecastColor==="gray"?"#888780":stage?.color||"#888";
+                        // confidence label
+                        const confPct = opp.stage==="fechado"?"100%":opp.stage==="po_recebido"?"90%":opp.stage==="neg"?"80%":opp.stage==="proposta"?"50%":opp.stage==="diagnostico"?"30%":opp.stage==="qualificacao"||opp.stage==="prospeccao"?"10%":"—";
+                        return (
+                          <tr key={opp.id} onClick={()=>setSel(opp===sel?null:opp)}
+                            style={{background:sel?.id===opp.id?"rgba(140,26,26,0.12)":rowBg,borderBottom:`1px solid var(--border2)`,cursor:"pointer",transition:"background .1s"}}>
+                            {/* NEG dot */}
+                            <td style={{padding:"7px 9px"}}>
+                              <div style={{width:"10px",height:"10px",borderRadius:"50%",background:dotColor,margin:"0 auto"}}/>
+                            </td>
+                            {/* RESP */}
+                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",whiteSpace:"nowrap"}}>{opp.resp||"EF"}</td>
+                            {/* CUSTOMER */}
+                            <td style={{padding:"7px 9px",fontWeight:600,color:"var(--text-primary)",whiteSpace:"nowrap"}}>{opp.company}</td>
+                            {/* SUPPLIER */}
+                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",whiteSpace:"nowrap"}}>{opp.supplier||"—"}</td>
+                            {/* DESCRIPTION */}
+                            <td style={{padding:"7px 9px",color:"var(--text-primary)",maxWidth:"220px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title}</td>
+                            {/* AMOUNT */}
+                            <td style={{padding:"7px 9px",color:"var(--text-accent)",fontWeight:600,whiteSpace:"nowrap",textAlign:"right"}}>
+                              {opp.value?`R$ ${opp.value.toLocaleString("pt-BR")}`:"—"}
+                            </td>
+                            {/* CONFIDENCE */}
+                            <td style={{padding:"7px 9px"}}>
+                              <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:(stage?.color||"#888")+"22",color:stage?.color||"#888",fontWeight:700}}>{confPct}</span>
+                            </td>
+                            {/* FOLLOW-UP */}
+                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px",maxWidth:"200px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.nextAction||"—"}</td>
+                            {/* CONTATOS */}
+                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px",whiteSpace:"nowrap"}}>{opp.contact||"—"}</td>
+                            {/* Actions */}
+                            <td style={{padding:"7px 9px"}}>
+                              <button onClick={e=>{e.stopPropagation();openAI(opp);}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"13px",padding:"2px"}} title="IA">⚡</button>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+                {opps.length===0 && <div style={{textAlign:"center",padding:"30px 0",color:"var(--text-muted)",fontSize:"13px"}}>Nenhuma oportunidade cadastrada</div>}
+              </div>
+            )}
           </div>
         )}
 
@@ -271,22 +484,22 @@ function App() {
                 const val   = opps.filter(o=>o.stage===s.id).reduce((a,o)=>a+o.value,0);
                 const pct   = totalVal>0?Math.round(val/totalVal*100):0;
                 return (
-                  <div key={s.id} style={{background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"12px",borderTop:`3px solid ${s.color}`}}>
+                  <div key={s.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"12px",borderTop:`3px solid ${s.color}`}}>
                     <div style={{fontSize:"10px",color:"#bbb",marginBottom:"4px"}}>{s.tag} · {s.label}</div>
-                    <div style={{fontSize:"22px",fontWeight:600,marginBottom:"2px"}}>{count}</div>
-                    <div style={{fontSize:"11px",color:"#888"}}>R$ {(val/1000).toFixed(0)}k · {pct}%</div>
+                    <div style={{fontSize:"22px",fontWeight:600,marginBottom:"2px",color:"var(--text-primary)"}}>{count}</div>
+                    <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>R$ {(val/1000).toFixed(0)}k · {pct}%</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"14px"}}>
-              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"10px"}}>Todas as oportunidades</div>
+            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"10px",color:"var(--text-primary)"}}>Todas as oportunidades</div>
               {[...opps].sort((a,b)=>b.value-a.value).map(opp=>(
-                <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid #f5f5f5",cursor:"pointer"}}>
+                <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid var(--border2)",cursor:"pointer"}}>
                   <div style={{width:"8px",height:"8px",borderRadius:"50%",background:STAGES.find(s=>s.id===opp.stage)?.color,flexShrink:0}}/>
                   <span style={{fontSize:"12px",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title}</span>
-                  <span style={{fontSize:"11px",color:"#888",minWidth:"72px",flexShrink:0}}>{opp.company}</span>
-                  <span style={{fontSize:"12px",fontWeight:600,minWidth:"54px",textAlign:"right",flexShrink:0}}>R$ {(opp.value/1000).toFixed(0)}k</span>
+                  <span style={{fontSize:"11px",color:"var(--text-secondary)",minWidth:"72px",flexShrink:0}}>{opp.company}</span>
+                  <span style={{fontSize:"12px",fontWeight:600,minWidth:"54px",textAlign:"right",flexShrink:0,color:"var(--text-primary)"}}>R$ {(opp.value/1000).toFixed(0)}k</span>
                   <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],flexShrink:0}}>{opp.priority}</span>
                 </div>
               ))}
@@ -297,17 +510,17 @@ function App() {
         {/* FOLLOW-UPS */}
         {view==="tasks" && (
           <div style={{flex:1}}>
-            <div style={{background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"14px"}}>
-              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"12px"}}>Follow-ups por data</div>
+            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"12px",color:"var(--text-primary)"}}>Follow-ups por data</div>
               {[...opps].filter(o=>o.nextAction).sort((a,b)=>(a.nextDate||"9999")>(b.nextDate||"9999")?1:-1).map(opp=>{
                 const late = opp.nextDate&&opp.nextDate<today;
                 const stg  = STAGES.find(s=>s.id===opp.stage);
                 return (
-                  <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",gap:"12px",padding:"10px 0",borderBottom:"1px solid #f5f5f5",cursor:"pointer",alignItems:"flex-start"}}>
-                    <div style={{minWidth:"74px",fontSize:"11px",color:late?"#E24B4A":"#bbb",fontWeight:late?600:400}}>{opp.nextDate||"—"}</div>
+                  <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",gap:"12px",padding:"10px 0",borderBottom:"1px solid var(--border2)",cursor:"pointer",alignItems:"flex-start"}}>
+                    <div style={{minWidth:"74px",fontSize:"11px",color:late?"#FF7777":"#5A5050",fontWeight:late?600:400}}>{opp.nextDate||"—"}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:"12px",fontWeight:600,marginBottom:"2px"}}>{opp.nextAction}</div>
-                      <div style={{fontSize:"11px",color:"#888"}}>{opp.company} · {opp.title}</div>
+                      <div style={{fontSize:"12px",fontWeight:600,marginBottom:"2px",color:"var(--text-primary)"}}>{opp.nextAction}</div>
+                      <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>{opp.company} · {opp.title}</div>
                     </div>
                     <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:stg?.color+"22",color:stg?.color,fontWeight:600,flexShrink:0}}>{stg?.tag}</span>
                     <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],flexShrink:0}}>{opp.priority}</span>
@@ -319,24 +532,434 @@ function App() {
           </div>
         )}
 
+  
+        {/* ===== PERFIL ===== */}
+        {view==="perfil" && (
+          <div style={{flex:1,maxWidth:"600px"}}>
+            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
+                <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Perfil e Configurações</div>
+                {!profileEdit && <button onClick={()=>{setProfileDraft({...profile});setProfileEdit(true);}} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>Editar</button>}
+              </div>
+              {!profileEdit ? (
+                <div>
+                  <div style={{display:"flex",gap:"16px",alignItems:"center",marginBottom:"18px"}}>
+                    <div style={{width:"64px",height:"64px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",fontWeight:700,color:"#FFD0D0",flexShrink:0}}>
+                      {profile.photo ? <img src={profile.photo} style={{width:"64px",height:"64px",borderRadius:"50%",objectFit:"cover"}} alt="foto"/> : (profile.userName||"U").split(" ").map(w=>w[0]).slice(0,2).join("")}
+                    </div>
+                    <div>
+                      <div style={{fontSize:"16px",fontWeight:700,color:"var(--text-primary)"}}>{profile.userName||"—"}</div>
+                      <div style={{fontSize:"12px",color:"var(--text-accent)"}}>{profile.role||"—"}</div>
+                      <div style={{fontSize:"12px",color:"var(--text-secondary)"}}>{profile.companyName||"—"}</div>
+                    </div>
+                  </div>
+                  {[["E-mail",profile.email],["Telefone",profile.phone],["LinkedIn",profile.linkedin],["Região",profile.region]].map(([k,v])=>(
+                    <div key={k} style={{display:"flex",gap:"12px",padding:"7px 0",borderBottom:"1px solid var(--border2)"}}>
+                      <span style={{fontSize:"12px",color:"var(--text-secondary)",width:"80px",flexShrink:0}}>{k}</span>
+                      <span style={{fontSize:"12px",color:"var(--text-primary)"}}>{v||"—"}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  {[["companyName","Empresa"],["userName","Nome"],["role","Cargo"],["email","E-mail"],["phone","Telefone"],["linkedin","LinkedIn"],["region","Região"]].map(([k,label])=>(
+                    <div key={k} style={{marginBottom:"10px"}}>
+                      <label style={lbl}>{label}</label>
+                      <input value={profileDraft[k]||""} onChange={e=>setProfileDraft({...profileDraft,[k]:e.target.value})} style={inp}/>
+                    </div>
+                  ))}
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={lbl}>Foto (URL ou base64)</label>
+                    <input value={profileDraft.photo||""} onChange={e=>setProfileDraft({...profileDraft,photo:e.target.value})} style={inp} placeholder="https://... ou cole base64"/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px",marginTop:"14px"}}>
+                    <button onClick={()=>saveProfile(profileDraft)} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:"#8C1A1A",color:"#FFD0D0",cursor:"pointer",fontWeight:600}}>Salvar</button>
+                    <button onClick={()=>setProfileEdit(false)} style={{padding:"9px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===== BUDGET ===== */}
+        {view==="budget" && (
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Budget {new Date().getFullYear()}</div>
+              <button onClick={()=>setBudgetModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>+ Adicionar meta</button>
+            </div>
+            {/* Summary cards */}
+            {(()=>{
+              const tot   = budgets.reduce((s,b)=>s+b.target,0);
+              const real  = budgets.reduce((s,b)=>s+b.realized,0);
+              const pct   = tot>0?Math.round(real/tot*100):0;
+              return (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"14px"}}>
+                  {[["Meta total","R$ "+tot.toLocaleString("pt-BR"),"#E6F1FB","#0C447C"],["Realizado","R$ "+real.toLocaleString("pt-BR"),"#EAF3DE","#27500A"],["Atingimento",pct+"%",pct>=80?"#EAF3DE":pct>=50?"#FAEEDA":"#FCEBEB",pct>=80?"#27500A":pct>=50?"#633806":"#791F1F"]].map(([l,v,bg,tc])=>(
+                    <div key={l} style={{background:bg,borderRadius:"8px",padding:"10px 12px"}}>
+                      <div style={{fontSize:"10px",color:tc,opacity:.7,marginBottom:"4px"}}>{l}</div>
+                      <div style={{fontSize:"16px",fontWeight:700,color:tc}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                <thead><tr style={{background:"var(--bg-card2)"}}>
+                  {["Cliente","Fornecedor","Meta","Realizado","% Ating.","Ano",""].map(h=>(
+                    <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)"}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {budgets.length===0 && <tr><td colSpan={7} style={{padding:"20px",textAlign:"center",color:"var(--text-muted)",fontSize:"12px"}}>Nenhuma meta cadastrada</td></tr>}
+                  {budgets.map(b=>{
+                    const pct=b.target>0?Math.round(b.realized/b.target*100):0;
+                    const pc=pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                    return (
+                      <tr key={b.id} style={{borderBottom:"1px solid var(--border2)"}}>
+                        <td style={{padding:"8px 10px",color:"var(--text-primary)",fontWeight:600}}>{b.client}</td>
+                        <td style={{padding:"8px 10px",color:"var(--text-secondary)"}}>{b.supplier||"—"}</td>
+                        <td style={{padding:"8px 10px",color:"var(--text-accent)"}}>R$ {b.target.toLocaleString("pt-BR")}</td>
+                        <td style={{padding:"8px 10px",color:"var(--text-green)"}}>R$ {b.realized.toLocaleString("pt-BR")}</td>
+                        <td style={{padding:"8px 10px"}}><span style={{color:pc,fontWeight:700}}>{pct}%</span></td>
+                        <td style={{padding:"8px 10px",color:"var(--text-secondary)"}}>{b.year}</td>
+                        <td style={{padding:"8px 10px"}}><button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"13px"}}>✕</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {budgetModal && (
+              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"360px",maxWidth:"90vw"}}>
+                  <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Nova meta de budget</div>
+                  {[["client","Cliente *","text"],["supplier","Fornecedor","text"],["target","Meta (R$)","number"],["realized","Realizado (R$)","number"],["year","Ano","number"]].map(([k,lbl,t])=>(
+                    <div key={k} style={{marginBottom:"8px"}}>
+                      <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lbl}</label>
+                      <input type={t} value={budgetForm[k]||""} onChange={e=>setBudgetForm({...budgetForm,[k]:e.target.value})} style={inp}/>
+                    </div>
+                  ))}
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas</label>
+                    <textarea value={budgetForm.notes||""} onChange={e=>setBudgetForm({...budgetForm,notes:e.target.value})} style={{...inp,height:"52px"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={addBudget} disabled={!budgetForm.client} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:budgetForm.client?"#8C1A1A":"#4A2A2A",color:budgetForm.client?"#FFD0D0":"#7A5050",cursor:budgetForm.client?"pointer":"default",fontWeight:600}}>Salvar</button>
+                    <button onClick={()=>setBudgetModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== PÓS VENDA ===== */}
+        {view==="posvendas" && (
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Pós-venda</div>
+              <button onClick={()=>setPosModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>+ Novo registro</button>
+            </div>
+            {/* status summary */}
+            {(()=>{
+              const st={"pendente":"Pendente","em_transito":"Em trânsito","entregue_total":"Entregue total","entregue_parcial":"Parcial","reclamacao":"Reclamação","manutencao":"Manutenção"};
+              const colors={"pendente":"#EF9F27","em_transito":"#378ADD","entregue_total":"#1D9E75","entregue_parcial":"#5DCAA5","reclamacao":"#E24B4A","manutencao":"#7F77DD"};
+              return (
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"12px"}}>
+                  {Object.entries(st).map(([k,v])=>{
+                    const cnt=posVendas.filter(p=>p.status===k).length;
+                    return <span key={k} style={{fontSize:"11px",padding:"3px 10px",borderRadius:"10px",background:colors[k]+"22",color:colors[k],fontWeight:600}}>{v}: {cnt}</span>;
+                  })}
+                </div>
+              );
+            })()}
+            <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+              {posVendas.length===0 && <div style={{fontSize:"13px",color:"var(--text-muted)",textAlign:"center",padding:"30px 0"}}>Nenhum registro de pós-venda</div>}
+              {posVendas.map(p=>{
+                const stColors={"pendente":"#EF9F27","em_transito":"#378ADD","entregue_total":"#1D9E75","entregue_parcial":"#5DCAA5","reclamacao":"#E24B4A","manutencao":"#7F77DD"};
+                const stLabels={"pendente":"Pendente","em_transito":"Em trânsito","entregue_total":"Entregue total","entregue_parcial":"Parcial","reclamacao":"Reclamação","manutencao":"Manutenção"};
+                const c=stColors[p.status]||"#888";
+                return (
+                  <div key={p.id} style={{background:"#252525",border:`1px solid #3A3A3A`,borderLeft:`3px solid ${c}`,borderRadius:"8px",padding:"12px 14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                      <div>
+                        <div style={{fontSize:"13px",fontWeight:600,color:"var(--text-primary)"}}>{p.client}</div>
+                        <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>{p.contact||"—"}</div>
+                      </div>
+                      <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                        <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"8px",background:c+"22",color:c,fontWeight:600}}>{stLabels[p.status]}</span>
+                        <button onClick={()=>delPosVenda(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"12px"}}>✕</button>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"6px",marginBottom:"6px"}}>
+                      {[["NF",p.nf],["PO",p.po],["Orç.",p.orcamento],["Entrega",p.deliveryDate],["Tipo entrega",p.deliveryType==="total"?"Total":"Parcial"],["Valor","R$ "+(p.value||0).toLocaleString("pt-BR")]].map(([k,v])=>(
+                        <div key={k} style={{background:"var(--bg-card2)",borderRadius:"5px",padding:"5px 7px"}}>
+                          <div style={{fontSize:"9px",color:"var(--text-secondary)",marginBottom:"2px"}}>{k}</div>
+                          <div style={{fontSize:"11px",color:"var(--text-primary)",fontWeight:600}}>{v||"—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {(p.issue||p.notes) && <div style={{fontSize:"11px",color:"#C09080",background:"var(--bg-card2)",borderRadius:"5px",padding:"6px 8px"}}>{p.issue||p.notes}</div>}
+                    <div style={{marginTop:"8px"}}>
+                      <select value={p.status} onChange={e=>updatePosVenda({...p,status:e.target.value})} style={{...inp,fontSize:"11px",padding:"4px 8px",width:"auto"}}>
+                        <option value="pendente">Pendente</option>
+                        <option value="em_transito">Em trânsito</option>
+                        <option value="entregue_total">Entregue total</option>
+                        <option value="entregue_parcial">Entregue parcial</option>
+                        <option value="reclamacao">Reclamação</option>
+                        <option value="manutencao">Manutenção</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {posModal && (
+              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"380px",maxWidth:"90vw",maxHeight:"85vh",overflowY:"auto"}}>
+                  <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Novo registro pós-venda</div>
+                  {[["client","Cliente *","text"],["contact","Contato","text"],["nf","Número NF","text"],["po","Número PO","text"],["orcamento","Orçamento relacionado","text"],["deliveryDate","Data de entrega","date"],["value","Valor R$","number"]].map(([k,lb,t])=>(
+                    <div key={k} style={{marginBottom:"8px"}}>
+                      <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lb}</label>
+                      <input type={t} value={posForm[k]||""} onChange={e=>setPosForm({...posForm,[k]:e.target.value})} style={inp}/>
+                    </div>
+                  ))}
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Status</label>
+                    <select value={posForm.status} onChange={e=>setPosForm({...posForm,status:e.target.value})} style={inp}>
+                      <option value="pendente">Pendente</option><option value="em_transito">Em trânsito</option><option value="entregue_total">Entregue total</option><option value="entregue_parcial">Entregue parcial</option><option value="reclamacao">Reclamação</option><option value="manutencao">Manutenção</option>
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Tipo de entrega</label>
+                    <select value={posForm.deliveryType} onChange={e=>setPosForm({...posForm,deliveryType:e.target.value})} style={inp}>
+                      <option value="total">Total</option><option value="parcial">Parcial</option>
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Ocorrência / reclamação</label>
+                    <textarea value={posForm.issue||""} onChange={e=>setPosForm({...posForm,issue:e.target.value})} style={{...inp,height:"52px"}} placeholder="Descreva qualquer problema, reclamação ou solicitação de manutenção"/>
+                  </div>
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas</label>
+                    <textarea value={posForm.notes||""} onChange={e=>setPosForm({...posForm,notes:e.target.value})} style={{...inp,height:"46px"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={addPosVenda} disabled={!posForm.client} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:posForm.client?"#8C1A1A":"#4A2A2A",color:posForm.client?"#FFD0D0":"#7A5050",cursor:posForm.client?"pointer":"default",fontWeight:600}}>Salvar</button>
+                    <button onClick={()=>setPosModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== ORÇAMENTOS ===== */}
+        {view==="orcamentos" && (
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Orçamentos</div>
+              <button onClick={()=>setOrcModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>+ Novo orçamento</button>
+            </div>
+            {/* summary */}
+            {(()=>{
+              const ab=orcamentos.filter(o=>o.status==="aberto").length;
+              const ap=orcamentos.filter(o=>o.status==="aprovado").length;
+              const pe=orcamentos.filter(o=>o.status==="perdido").length;
+              const tot=orcamentos.reduce((s,o)=>s+(o.value||0),0);
+              return (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"12px"}}>
+                  {[["Abertos",ab,"#378ADD"],["Aprovados",ap,"#1D9E75"],["Perdidos",pe,"#E24B4A"],["Total","R$ "+tot.toLocaleString("pt-BR"),"#FFAAAA"]].map(([l,v,c])=>(
+                    <div key={l} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"8px 10px",textAlign:"center"}}>
+                      <div style={{fontSize:"9px",color:"var(--text-secondary)",marginBottom:"3px"}}>{l}</div>
+                      <div style={{fontSize:"15px",fontWeight:700,color:c}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                <thead><tr style={{background:"var(--bg-card2)"}}>
+                  {["Nº Orç.","Cliente","Fornecedor","Valor","Data","Status","Opp vinculada","Arq.",""].map(h=>(
+                    <th key={h} style={{padding:"7px 9px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)"}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {orcamentos.length===0 && <tr><td colSpan={9} style={{padding:"20px",textAlign:"center",color:"var(--text-muted)"}}>Nenhum orçamento cadastrado</td></tr>}
+                  {orcamentos.map(o=>{
+                    const sc={"aberto":"#378ADD","aprovado":"#1D9E75","perdido":"#E24B4A","em_negociacao":"#EF9F27","aguardando":"#888780"}[o.status]||"#888";
+                    const linkedOpp = opps.find(op=>op.id===o.oppId);
+                    return (
+                      <tr key={o.id} style={{borderBottom:"1px solid var(--border2)"}}>
+                        <td style={{padding:"7px 9px",color:"var(--text-accent)",fontWeight:700}}>{o.number}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-primary)"}}>{o.client}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-secondary)"}}>{o.supplier||"—"}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-green)"}}>R$ {(o.value||0).toLocaleString("pt-BR")}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-secondary)"}}>{o.date||"—"}</td>
+                        <td style={{padding:"7px 9px"}}><span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:sc+"22",color:sc,fontWeight:600}}>{o.status}</span></td>
+                        <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px",maxWidth:"120px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{linkedOpp?linkedOpp.title:"—"}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"10px"}}>{o.fileName||"—"}</td>
+                        <td style={{padding:"7px 9px"}}><button onClick={()=>delOrcamento(o.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"13px"}}>✕</button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {orcModal && (
+              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"380px",maxWidth:"90vw",maxHeight:"85vh",overflowY:"auto"}}>
+                  <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Novo orçamento</div>
+                  {[["number","Número do orçamento *","text"],["client","Cliente *","text"],["contact","Contato","text"],["supplier","Fornecedor","text"],["value","Valor R$","number"],["date","Data","date"],["fileName","Nome do arquivo Excel","text"]].map(([k,lb,t])=>(
+                    <div key={k} style={{marginBottom:"8px"}}>
+                      <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lb}</label>
+                      <input type={t} value={orcForm[k]||""} onChange={e=>setOrcForm({...orcForm,[k]:e.target.value})} style={inp}/>
+                    </div>
+                  ))}
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Status</label>
+                    <select value={orcForm.status} onChange={e=>setOrcForm({...orcForm,status:e.target.value})} style={inp}>
+                      <option value="aberto">Aberto</option><option value="em_negociacao">Em negociação</option><option value="aprovado">Aprovado</option><option value="perdido">Perdido</option><option value="aguardando">Aguardando</option>
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Vincular à oportunidade</label>
+                    <select value={orcForm.oppId||""} onChange={e=>setOrcForm({...orcForm,oppId:e.target.value})} style={inp}>
+                      <option value="">— nenhuma —</option>
+                      {opps.map(op=><option key={op.id} value={op.id}>{op.company} · {op.title}</option>)}
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas</label>
+                    <textarea value={orcForm.notes||""} onChange={e=>setOrcForm({...orcForm,notes:e.target.value})} style={{...inp,height:"46px"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={addOrcamento} disabled={!orcForm.number||!orcForm.client} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:(orcForm.number&&orcForm.client)?"#8C1A1A":"#4A2A2A",color:(orcForm.number&&orcForm.client)?"#FFD0D0":"#7A5050",cursor:(orcForm.number&&orcForm.client)?"pointer":"default",fontWeight:600}}>Salvar</button>
+                    <button onClick={()=>setOrcModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== PROJETOS ===== */}
+        {view==="projetos" && (
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Projetos</div>
+              <button onClick={()=>setProjModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>+ Novo projeto</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"10px"}}>
+              {projetos.length===0 && <div style={{fontSize:"13px",color:"var(--text-muted)",textAlign:"center",padding:"30px 0",gridColumn:"1/-1"}}>Nenhum projeto cadastrado</div>}
+              {projetos.map(p=>{
+                const typeLabels={"braco_gravidade":"Braço gravidade zero","fixacao":"Fixação especial","suporte":"Suporte","gabarito":"Gabarito","outro":"Outro"};
+                const stColors={"em_andamento":"#378ADD","aguardando_cliente":"#EF9F27","em_producao":"#7F77DD","concluido":"#1D9E75","cancelado":"#E24B4A"};
+                const stLabels={"em_andamento":"Em andamento","aguardando_cliente":"Aguard. cliente","em_producao":"Em produção","concluido":"Concluído","cancelado":"Cancelado"};
+                const sc=stColors[p.status]||"#888";
+                return (
+                  <div key={p.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderLeft:`3px solid ${sc}`,borderRadius:"8px",padding:"14px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                      <div>
+                        <div style={{fontSize:"13px",fontWeight:700,color:"var(--text-primary)",marginBottom:"2px"}}>{p.name}</div>
+                        <div style={{fontSize:"10px",color:"var(--text-accent)"}}>{typeLabels[p.type]||p.type}</div>
+                      </div>
+                      <div style={{display:"flex",gap:"5px",alignItems:"center"}}>
+                        <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:sc+"22",color:sc,fontWeight:600}}>{stLabels[p.status]}</span>
+                        <button onClick={()=>delProjeto(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"12px"}}>✕</button>
+                      </div>
+                    </div>
+                    <div style={{fontSize:"11px",color:"var(--text-secondary)",marginBottom:"6px"}}>{p.client||"— cliente não informado"}</div>
+                    {p.description && <div style={{fontSize:"11px",color:"var(--text-primary)",marginBottom:"6px",lineHeight:1.5}}>{p.description}</div>}
+                    {(p.dimensions||p.material||p.drawingRef) && (
+                      <div style={{background:"var(--bg-card2)",borderRadius:"5px",padding:"7px 9px",marginBottom:"6px"}}>
+                        {p.dimensions && <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"2px"}}>Dimensões: <span style={{color:"var(--text-primary)"}}>{p.dimensions}</span></div>}
+                        {p.material   && <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"2px"}}>Material: <span style={{color:"var(--text-primary)"}}>{p.material}</span></div>}
+                        {p.drawingRef && <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>Desenho ref.: <span style={{color:"var(--text-accent)"}}>{p.drawingRef}</span></div>}
+                      </div>
+                    )}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      {p.deadline && <span style={{fontSize:"10px",color:"var(--text-secondary)"}}>Prazo: {p.deadline}</span>}
+                      {p.engResp  && <span style={{fontSize:"10px",color:"var(--text-green)"}}>Eng: {p.engResp}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {projModal && (
+              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"400px",maxWidth:"90vw",maxHeight:"88vh",overflowY:"auto"}}>
+                  <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Novo projeto</div>
+                  {[["name","Nome do projeto *","text"],["client","Cliente","text"],["dimensions","Dimensões / medidas","text"],["material","Material","text"],["drawingRef","Referência do desenho","text"],["deadline","Prazo","date"],["engResp","Engenheiro responsável","text"]].map(([k,lb,t])=>(
+                    <div key={k} style={{marginBottom:"8px"}}>
+                      <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lb}</label>
+                      <input type={t} value={projForm[k]||""} onChange={e=>setProjForm({...projForm,[k]:e.target.value})} style={inp}/>
+                    </div>
+                  ))}
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Tipo de projeto</label>
+                    <select value={projForm.type} onChange={e=>setProjForm({...projForm,type:e.target.value})} style={inp}>
+                      <option value="braco_gravidade">Braço gravidade zero</option><option value="fixacao">Fixação especial</option><option value="suporte">Suporte</option><option value="gabarito">Gabarito</option><option value="outro">Outro</option>
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Status</label>
+                    <select value={projForm.status} onChange={e=>setProjForm({...projForm,status:e.target.value})} style={inp}>
+                      <option value="em_andamento">Em andamento</option><option value="aguardando_cliente">Aguardando cliente</option><option value="em_producao">Em produção</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option>
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Descrição / observações</label>
+                    <textarea value={projForm.description||""} onChange={e=>setProjForm({...projForm,description:e.target.value})} style={{...inp,height:"60px"}} placeholder="Descreva o projeto, requisitos do cliente, aplicação..."/>
+                  </div>
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas internas</label>
+                    <textarea value={projForm.notes||""} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"46px"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={addProjeto} disabled={!projForm.name} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:projForm.name?"#8C1A1A":"#4A2A2A",color:projForm.name?"#FFD0D0":"#7A5050",cursor:projForm.name?"pointer":"default",fontWeight:600}}>Salvar</button>
+                    <button onClick={()=>setProjModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* PAINEL DETALHE */}
         {sel && (
-          <div style={{width:"272px",flexShrink:0,background:"#fff",border:"1px solid #e8e8e8",borderRadius:"8px",padding:"14px",position:"sticky",top:"60px"}}>
+          <div style={{width:"272px",flexShrink:0,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px",position:"sticky",top:"60px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
               <div style={{flex:1,paddingRight:"8px"}}>
-                <div style={{fontSize:"13px",fontWeight:600,marginBottom:"2px",lineHeight:1.3}}>{sel.title}</div>
-                <div style={{fontSize:"11px",color:"#888"}}>{sel.company} · {sel.contact}</div>
+                <div style={{fontSize:"13px",fontWeight:600,marginBottom:"2px",lineHeight:1.3,color:"var(--text-primary)"}}>{sel.title}</div>
+                <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>{sel.company} · {sel.contact}</div>
               </div>
-              <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px",lineHeight:1,padding:0}}>✕</button>
+              <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px",lineHeight:1,padding:0}}>✕</button>
             </div>
             <div style={{display:"flex",gap:"5px",flexWrap:"wrap",marginBottom:"10px"}}>
-              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:"#E6F1FB",color:"#0C447C",fontWeight:600}}>R$ {(sel.value||0).toLocaleString("pt-BR")}</span>
+              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.25)",color:"var(--text-accent)",fontWeight:600}}>R$ {(sel.value||0).toLocaleString("pt-BR")}</span>
               <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:PRI_BG[sel.priority],color:PRI_TXT[sel.priority],fontWeight:600}}>{sel.priority}</span>
               <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:(STAGES.find(s=>s.id===sel.stage)?.color||"#888")+"22",color:STAGES.find(s=>s.id===sel.stage)?.color,fontWeight:600}}>{STAGES.find(s=>s.id===sel.stage)?.label}</span>
             </div>
             <div style={{display:"flex",gap:"5px",marginBottom:"12px"}}>
-              <button onClick={()=>move(sel.id,-1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid #ddd",background:"transparent",cursor:"pointer",color:"#666"}}>← Recuar</button>
-              <button onClick={()=>move(sel.id,1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid #0F6E56",background:"#E1F5EE",cursor:"pointer",color:"#085041",fontWeight:600}}>Avançar →</button>
+              <button onClick={()=>move(sel.id,-1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",color:"var(--text-secondary)"}}>← Recuar</button>
+              <button onClick={()=>move(sel.id,1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.25)",cursor:"pointer",color:"var(--text-accent)",fontWeight:600}}>Avançar →</button>
+            </div>
+            <div style={{marginBottom:"8px"}}>
+              <label style={lbl}>Fornecedor</label>
+              <input value={sel.supplier||""} onChange={e=>updateOpp({...sel,supplier:e.target.value})} style={inp}/>
+            </div>
+            <div style={{marginBottom:"8px"}}>
+              <label style={lbl}>Cor forecast</label>
+              <div style={{display:"flex",gap:"4px"}}>
+                {[["none","—","#888"],["yellow","🟡","#EF9F27"],["red","🔴","#E24B4A"],["gray","⚫","#888780"]].map(([v,l,c])=>(
+                  <button key={v} onClick={()=>updateOpp({...sel,forecastColor:v})} style={{flex:1,padding:"4px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${(sel.forecastColor||"none")===v?c:"var(--border)"}`,background:(sel.forecastColor||"none")===v?c+"33":"transparent",color:(sel.forecastColor||"none")===v?c:"var(--text-secondary)",cursor:"pointer"}}>{l}</button>
+                ))}
+              </div>
             </div>
             {[
               {label:"Próxima ação",     key:"nextAction", type:"textarea"},
@@ -356,13 +979,13 @@ function App() {
               <label style={lbl}>Prioridade</label>
               <div style={{display:"flex",gap:"4px"}}>
                 {["alta","media","baixa"].map(p=>(
-                  <button key={p} onClick={()=>updateOpp({...sel,priority:p})} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${sel.priority===p?PRI_TXT[p]:"#ddd"}`,background:sel.priority===p?PRI_BG[p]:"transparent",color:sel.priority===p?PRI_TXT[p]:"#888",cursor:"pointer",fontWeight:sel.priority===p?600:400,textTransform:"capitalize"}}>{p}</button>
+                  <button key={p} onClick={()=>updateOpp({...sel,priority:p})} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${sel.priority===p?PRI_TXT[p]:"#ddd"}`,background:sel.priority===p?"rgba(140,26,26,0.25)":"transparent",color:sel.priority===p?"#FFAAAA":"#7A7070",cursor:"pointer",fontWeight:sel.priority===p?600:400,textTransform:"capitalize"}}>{p}</button>
                 ))}
               </div>
             </div>
             <div style={{display:"flex",gap:"5px"}}>
-              <button onClick={()=>openAI(`Analise a oportunidade "${sel.title}" da ${sel.company} na etapa ${STAGES.find(s=>s.id===sel.stage)?.label}. Próximos passos com 3S+M?`)} style={{flex:1,padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid #534AB7",background:"#EEEDFE",color:"#3C3489",cursor:"pointer",fontWeight:600}}>Analisar com IA</button>
-              <button onClick={()=>delOpp(sel.id)} style={{padding:"7px 10px",fontSize:"11px",borderRadius:"6px",border:"1px solid #E24B4A",background:"#FCEBEB",color:"#791F1F",cursor:"pointer"}}>Excluir</button>
+              <button onClick={()=>openAI(`Analise a oportunidade "${sel.title}" da ${sel.company} na etapa ${STAGES.find(s=>s.id===sel.stage)?.label}. Próximos passos com 3S+M?`)} style={{flex:1,padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid #6B3A3A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>Analisar com IA</button>
+              <button onClick={()=>delOpp(sel.id)} style={{padding:"7px 10px",fontSize:"11px",borderRadius:"6px",border:"1px solid #5A2A2A",background:"rgba(80,20,20,0.3)",color:"#FF9090",cursor:"pointer"}}>Excluir</button>
             </div>
           </div>
         )}
@@ -370,48 +993,48 @@ function App() {
 
       {/* PAINEL IA */}
       {aiOpen && (
-        <div style={{position:"fixed",bottom:0,right:"16px",width:"330px",background:"#fff",border:"1px solid #e8e8e8",borderRadius:"12px 12px 0 0",display:"flex",flexDirection:"column",maxHeight:"480px",boxShadow:"0 -4px 24px rgba(0,0,0,0.09)",zIndex:50}}>
-          <div style={{padding:"10px 14px",borderBottom:"1px solid #f0f0f0",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
-            <div style={{width:"24px",height:"24px",borderRadius:"50%",background:"#534AB7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff",fontWeight:600,flexShrink:0}}>IA</div>
-            <span style={{fontSize:"13px",fontWeight:600,flex:1}}>Gestor IA · 3S+M</span>
+        <div style={{position:"fixed",bottom:0,right:"16px",width:"330px",background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"12px 12px 0 0",display:"flex",flexDirection:"column",maxHeight:"480px",boxShadow:"0 -4px 24px rgba(0,0,0,0.09)",zIndex:50}}>
+          <div style={{padding:"10px 14px",borderBottom:"1px solid #333",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+            <div style={{width:"24px",height:"24px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff",fontWeight:600,flexShrink:0}}>IA</div>
+            <span style={{fontSize:"13px",fontWeight:600,flex:1,color:"var(--text-primary)"}}>Gestor IA · 3S+M</span>
             {sel && <span style={{fontSize:"11px",color:"#bbb",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"80px"}}>{sel.company}</span>}
             <button onClick={()=>setAiOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px",lineHeight:1}}>✕</button>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:"8px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:"8px",background:"var(--bg-card2)"}}>
             {aiMsgs.map((m,i)=>(
               <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-                <div style={{maxWidth:"88%",padding:"8px 11px",borderRadius:m.role==="user"?"10px 10px 0 10px":"10px 10px 10px 0",background:m.role==="user"?"#E6F1FB":"#f5f5f3",fontSize:"12px",lineHeight:1.55,color:m.role==="user"?"#0C447C":"#1a1a1a",whiteSpace:"pre-wrap"}}>{m.content}</div>
+                <div style={{maxWidth:"88%",padding:"8px 11px",borderRadius:m.role==="user"?"10px 10px 0 10px":"10px 10px 10px 0",background:m.role==="user"?"rgba(140,26,26,0.3)":"#2A2A2A",fontSize:"12px",lineHeight:1.55,color:m.role==="user"?"#FFBBBB":"#D0C0C0",whiteSpace:"pre-wrap"}}>{m.content}</div>
               </div>
             ))}
-            {aiLoading && <div style={{display:"flex"}}><div style={{padding:"8px 12px",borderRadius:"10px 10px 10px 0",background:"#f5f5f3",fontSize:"12px",color:"#aaa"}}>Analisando...</div></div>}
+            {aiLoading && <div style={{display:"flex"}}><div style={{padding:"8px 12px",borderRadius:"10px 10px 10px 0",background:"var(--bg-header)",fontSize:"12px",color:"var(--text-secondary)"}}>Analisando...</div></div>}
             <div ref={aiEnd}/>
           </div>
-          <div style={{padding:"6px 8px 4px",borderTop:"1px solid #f0f0f0",display:"flex",flexWrap:"wrap",gap:"4px",flexShrink:0}}>
+          <div style={{padding:"6px 8px 4px",borderTop:"1px solid #333",display:"flex",flexWrap:"wrap",gap:"4px",flexShrink:0}}>
             {["Próximo passo 3S+M","Argumento NOMUDA","Plano 5W2H","Kaizen para este cliente","Risco de perda"].map(q=>(
-              <button key={q} onClick={()=>chat(q)} style={{fontSize:"10px",padding:"3px 8px",borderRadius:"10px",border:"1px solid #e8e8e8",background:"transparent",cursor:"pointer",color:"#666"}}>{q}</button>
+              <button key={q} onClick={()=>chat(q)} style={{fontSize:"10px",padding:"3px 8px",borderRadius:"10px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",color:"var(--text-secondary)"}}>{q}</button>
             ))}
           </div>
-          <div style={{padding:"6px 8px 8px",display:"flex",gap:"6px",flexShrink:0}}>
-            <input value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&chat()} placeholder="Pergunte ao gestor IA..." style={{flex:1,fontSize:"12px",padding:"7px 10px",borderRadius:"6px",border:"1px solid #ddd",background:"#fafafa"}}/>
-            <button onClick={()=>chat()} disabled={aiLoading} style={{padding:"7px 14px",fontSize:"13px",borderRadius:"6px",border:"none",background:aiLoading?"#CECBF6":"#534AB7",color:aiLoading?"#534AB7":"#fff",cursor:aiLoading?"default":"pointer",fontWeight:600}}>→</button>
+          <div style={{padding:"6px 8px 8px",display:"flex",gap:"6px",flexShrink:0,background:"#252525"}}>
+            <input value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&chat()} placeholder="Pergunte ao gestor IA..." style={{flex:1,fontSize:"12px",padding:"7px 10px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-input)",color:"var(--text-primary)"}}/>
+            <button onClick={()=>chat()} disabled={aiLoading} style={{padding:"7px 14px",fontSize:"13px",borderRadius:"6px",border:"none",background:aiLoading?"#5A2A2A":"#8C1A1A",color:aiLoading?"#7A5050":"#FFDDDD",cursor:aiLoading?"default":"pointer",fontWeight:600}}>→</button>
           </div>
         </div>
       )}
 
       {/* MODAL API KEY */}
       {showKey && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
           <div style={{background:"#fff",borderRadius:"12px",padding:"20px",width:"380px",maxWidth:"90vw",border:"1px solid #e8e8e8"}}>
-            <div style={{fontSize:"14px",fontWeight:600,marginBottom:"8px"}}>Chave da API Anthropic</div>
-            <p style={{fontSize:"12px",color:"#666",marginBottom:"14px",lineHeight:1.6}}>Necessária para o Gestor IA funcionar. Obtenha em{" "}
+            <div style={{fontSize:"14px",fontWeight:600,marginBottom:"8px",color:"var(--text-primary)"}}>Chave da API Anthropic</div>
+            <p style={{fontSize:"12px",color:"var(--text-secondary)",marginBottom:"14px",lineHeight:1.6}}>Necessária para o Gestor IA funcionar. Obtenha em{" "}
               <a href="https://console.anthropic.com" target="_blank" style={{color:"#185FA5"}}>console.anthropic.com</a>.
               {" "}A chave fica salva apenas neste navegador, nunca é enviada para terceiros.
             </p>
             <label style={lbl}>API Key (começa com sk-ant-...)</label>
             <input type="password" value={keyDraft} onChange={e=>setKeyDraft(e.target.value)} placeholder="sk-ant-api03-..." style={{...inp,marginBottom:"12px",fontSize:"13px"}}/>
             <div style={{display:"flex",gap:"8px"}}>
-              <button onClick={saveKey} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:"#185FA5",color:"#fff",cursor:"pointer",fontWeight:600}}>Salvar</button>
-              <button onClick={()=>setShowKey(false)} style={{padding:"9px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid #ddd",background:"transparent",cursor:"pointer"}}>Cancelar</button>
+              <button onClick={saveKey} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:"#8C1A1A",color:"#FFD0D0",cursor:"pointer",fontWeight:600}}>Salvar</button>
+              <button onClick={()=>setShowKey(false)} style={{padding:"9px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
             </div>
           </div>
         </div>
@@ -419,18 +1042,20 @@ function App() {
 
       {/* MODAL NOVA OPORTUNIDADE */}
       {newModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:"16px"}}>
-          <div style={{background:"#fff",borderRadius:"12px",border:"1px solid #e8e8e8",padding:"18px",width:"360px",maxWidth:"100%",maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:"16px"}}>
+          <div style={{background:"#252525",borderRadius:"12px",border:"1px solid var(--border)",padding:"18px",width:"360px",maxWidth:"100%",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
-              <span style={{fontSize:"14px",fontWeight:600}}>Nova oportunidade</span>
+              <span style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Nova oportunidade</span>
               <button onClick={()=>setNewModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px"}}>✕</button>
             </div>
             {[
               {l:"Título / produto *",  k:"title",      t:"text"},
-              {l:"Empresa *",           k:"company",    t:"text"},
+              {l:"Empresa (Customer) *",k:"company",    t:"text"},
+              {l:"Fornecedor (Supplier)",k:"supplier",  t:"text"},
+              {l:"Responsável (RESP.)", k:"resp",       t:"text"},
               {l:"Contato / decisor",   k:"contact",    t:"text"},
               {l:"Valor estimado R$",   k:"value",      t:"number"},
-              {l:"Próxima ação",        k:"nextAction", t:"text"},
+              {l:"Próxima ação / follow-up", k:"nextAction", t:"text"},
               {l:"Data do follow-up",   k:"nextDate",   t:"date"},
             ].map(f=>(
               <div key={f.k} style={{marginBottom:"8px"}}>
@@ -442,7 +1067,7 @@ function App() {
               <label style={lbl}>Notas</label>
               <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} style={{...inp,height:"56px"}}/>
             </div>
-            <div style={{display:"flex",gap:"8px",marginBottom:"12px"}}>
+            <div style={{display:"flex",gap:"8px",marginBottom:"8px"}}>
               <div style={{flex:1}}>
                 <label style={lbl}>Etapa inicial</label>
                 <select value={form.stage} onChange={e=>setForm({...form,stage:e.target.value})} style={inp}>
@@ -458,8 +1083,16 @@ function App() {
                 </select>
               </div>
             </div>
+            <div style={{marginBottom:"12px"}}>
+              <label style={lbl}>Cor forecast</label>
+              <div style={{display:"flex",gap:"6px",marginTop:"4px"}}>
+                {[["none","— Padrão","#888"],["yellow","🟡 Devemos ao cliente","#EF9F27"],["red","🔴 Negociação ativa","#E24B4A"],["gray","⚫ Perdido","#888780"]].map(([v,l,c])=>(
+                  <button key={v} onClick={()=>setForm({...form,forecastColor:v})} style={{flex:1,padding:"5px 4px",fontSize:"10px",borderRadius:"6px",border:`1px solid ${form.forecastColor===v?c:"var(--border)"}`,background:form.forecastColor===v?c+"22":"transparent",color:form.forecastColor===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:form.forecastColor===v?700:400}}>{l}</button>
+                ))}
+              </div>
+            </div>
             <button onClick={addOpp} disabled={!form.title||!form.company}
-              style={{width:"100%",padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:form.title&&form.company?"#0F6E56":"#9FE1CB",color:"#fff",cursor:form.title&&form.company?"pointer":"default",fontWeight:600}}>
+              style={{width:"100%",padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:form.title&&form.company?"#8C1A1A":"#4A2A2A",color:form.title&&form.company?"#FFD0D0":"#7A5050",cursor:form.title&&form.company?"pointer":"default",fontWeight:600}}>
               Criar oportunidade
             </button>
           </div>
