@@ -150,6 +150,44 @@ function App() {
   function addProjeto(){ if(!projForm.name) return; saveProjetos([...projetos,{...projForm,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}]); setProjForm({name:"",client:"",type:"braco_gravidade",description:"",dimensions:"",material:"",status:"em_andamento",deadline:"",engResp:"",notes:"",drawingRef:""}); setProjModal(false); }
   function delProjeto(id){ saveProjetos(projetos.filter(p=>p.id!==id)); }
 
+  // VISITA MODAL (follow-up detalhado / histórico)
+  const [visitaModal, setVisitaModal] = useState(false);
+  const [visitaOpp, setVisitaOpp] = useState(null);
+  const [visitaForm, setVisitaForm] = useState({date:"",summary:"",what:"",why:"",who:"",where:"",when:"",how:"",howMuch:"",nextStep:""});
+  function openVisita(opp){ setVisitaOpp(opp); setVisitaForm({date:new Date().toISOString().slice(0,10),summary:"",what:"",why:"",who:"",where:"",when:"",how:"",howMuch:"",nextStep:""}); setVisitaModal(true); }
+  function saveVisita(){
+    if(!visitaOpp||!visitaForm.summary) return;
+    const entry = {...visitaForm, id:Date.now(), createdAt: visitaForm.date || new Date().toISOString().slice(0,10)};
+    const hist = [...(visitaOpp.visitHistory||[]), entry];
+    updateOpp({...visitaOpp, visitHistory:hist, nextAction: visitaForm.nextStep||visitaOpp.nextAction, nextDate: visitaForm.when||visitaOpp.nextDate});
+    setVisitaModal(false);
+    setVisitaOpp(null);
+  }
+
+  // RELATÓRIO SEMANAL
+  const [relSelected, setRelSelected] = useState([]);
+  const [relText, setRelText] = useState("");
+  const [relLoading, setRelLoading] = useState(false);
+  const [relWeekFilter, setRelWeekFilter] = useState("all");
+  function toggleRelOpp(id){ setRelSelected(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]); setRelText(""); }
+  async function gerarRelatorio(){
+    if(!apiKey||relSelected.length===0) return;
+    setRelLoading(true); setRelText("");
+    const selOpps = opps.filter(o=>relSelected.includes(o.id));
+    const blocksText = selOpps.map(o=>{
+      const hist = (o.visitHistory||[]);
+      const lastVisit = hist.length>0?hist[hist.length-1]:null;
+      return `CLIENTE: ${o.company}\nCONTATO: ${o.contact||"—"}\nOPORTUNIDADE: ${o.title}${o.supplier?" ("+o.supplier+")":""}\nVALOR: R$ ${(o.value||0).toLocaleString("pt-BR")}\nETAPA: ${o.stage}\nÚLTIMO FOLLOW-UP: ${o.nextAction||"—"}\nHISTÓRICO ÚLTIMA VISITA: ${lastVisit?JSON.stringify(lastVisit):"sem registro"}`;
+    }).join("\n\n---\n\n");
+    const prompt = `Você é um assistente comercial B2B industrial. Com base nas informações abaixo, gere um relatório semanal de visitas e oportunidades comerciais em português. Para cada oportunidade use EXATAMENTE este formato:\n\nCLIENTE: [nome]\nCONTATO: [nome do contato responsável pela oportunidade]\nOPORTUNIDADE: [descrição]\nRESUMO:\n* [tópico 1]\n* [tópico 2]\n* [tópico 3]\nPRÓXIMO PASSO: [próximo passo claro e datado]\n\nSepare cada oportunidade com uma linha em branco. Seja objetivo, profissional e direto. Use os dados de histórico de visita (5W2H) quando disponíveis.\n\nDADOS:\n\n${blocksText}`;
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-opus-4-5",max_tokens:4000,messages:[{role:"user",content:prompt}]})});
+      const data = await res.json();
+      setRelText(data.content?.[0]?.text||"Erro ao gerar relatório.");
+    } catch(e){ setRelText("Erro de conexão."); }
+    setRelLoading(false);
+  }
+
   // TEMA
   const THEME_KEY = "crm_theme_v1";
   const getSystemTheme = () => window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -288,7 +326,7 @@ function App() {
           <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",fontWeight:600}}>3S+M</span>
         </div>
         <div style={{display:"flex",gap:"4px"}}>
-          {[["kanban","Pipeline/Forecast"],["dashboard","Funil"],["tasks","Follow-ups"],["clients","Clientes"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"],["perfil","Perfil"]].map(([v,l])=>(
+          {[["kanban","Pipeline/Forecast"],["dashboard","Funil"],["tasks","Follow-ups"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"],["perfil","Perfil"]].map(([v,l])=>(
             <button key={v} onClick={()=>setView(v)} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
           ))}
         </div>
@@ -393,82 +431,133 @@ function App() {
             {/* LINHAS — formato Forecast planilha */}
             {pipelineView==="lines" && (
               <div style={{overflowX:"auto"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px",minWidth:"900px"}}>
-                  <thead>
-                    <tr style={{background:"var(--bg-card2)",position:"sticky",top:0,zIndex:5}}>
-                      {[["neg","NEG.","40px"],["resp","RESP.","60px"],["company","CUSTOMER","120px"],["supplier","SUPPLIER","90px"],["title","DESCRIPTION","220px"],["value","AMOUNT","90px"],["stage","CONFIDENCE","80px"],["nextDate","FOLLOW-UP","200px"],["contact","CONTATOS","100px"]].map(([key,label,w])=>(
-                        <th key={key} onClick={()=>{ if(sortCol===key){setSortDir(d=>d==="asc"?"desc":"asc");}else{setSortCol(key);setSortDir("desc");} }}
-                          style={{padding:"7px 9px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:`1px solid var(--border)`,cursor:"pointer",whiteSpace:"nowrap",width:w,userSelect:"none"}}>
-                          {label}{sortCol===key?(sortDir==="asc"?" ↑":" ↓"):""}
-                        </th>
-                      ))}
-                      <th style={{padding:"7px 9px",width:"32px"}}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(()=>{
-                      let rows = [...opps];
-                      if(forecastFilter!=="todos") rows = rows.filter(o=>o.stage===forecastFilter||o.forecastColor===forecastFilter);
-                      rows.sort((a,b)=>{
-                        const stageOrder = ["prospeccao","qualificacao","diagnostico","proposta","neg","po_recebido","fechado"];
-                        let av,bv;
-                        if(sortCol==="stage") { av=stageOrder.indexOf(a.stage); bv=stageOrder.indexOf(b.stage); }
-                        else if(sortCol==="value") { av=a.value||0; bv=b.value||0; }
-                        else if(sortCol==="confidence") { av=a.confidence||0; bv=b.confidence||0; }
-                        else { av=(a[sortCol]||"").toString().toLowerCase(); bv=(b[sortCol]||"").toString().toLowerCase(); }
-                        if(av<bv) return sortDir==="asc"?-1:1;
-                        if(av>bv) return sortDir==="asc"?1:-1;
-                        return 0;
-                      });
-                      return rows.map(opp=>{
-                        const stage = STAGES.find(s=>s.id===opp.stage);
-                        const rowBg = opp.forecastColor==="yellow"
-                          ? "rgba(239,159,39,0.12)"
-                          : opp.forecastColor==="red"
-                          ? "rgba(226,75,74,0.12)"
-                          : opp.forecastColor==="gray"
-                          ? "rgba(95,94,90,0.15)"
-                          : "transparent";
-                        const dotColor = opp.forecastColor==="yellow"?"#EF9F27":opp.forecastColor==="red"?"#E24B4A":opp.forecastColor==="gray"?"#888780":stage?.color||"#888";
-                        // confidence label
-                        const confPct = opp.stage==="fechado"?"100%":opp.stage==="po_recebido"?"90%":opp.stage==="neg"?"80%":opp.stage==="proposta"?"50%":opp.stage==="diagnostico"?"30%":opp.stage==="qualificacao"||opp.stage==="prospeccao"?"10%":"—";
-                        return (
-                          <tr key={opp.id} onClick={()=>setSel(opp===sel?null:opp)}
-                            style={{background:sel?.id===opp.id?"rgba(140,26,26,0.12)":rowBg,borderBottom:`1px solid var(--border2)`,cursor:"pointer",transition:"background .1s"}}>
-                            {/* NEG dot */}
-                            <td style={{padding:"7px 9px"}}>
-                              <div style={{width:"10px",height:"10px",borderRadius:"50%",background:dotColor,margin:"0 auto"}}/>
-                            </td>
-                            {/* RESP */}
-                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",whiteSpace:"nowrap"}}>{opp.resp||"EF"}</td>
-                            {/* CUSTOMER */}
-                            <td style={{padding:"7px 9px",fontWeight:600,color:"var(--text-primary)",whiteSpace:"nowrap"}}>{opp.company}</td>
-                            {/* SUPPLIER */}
-                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",whiteSpace:"nowrap"}}>{opp.supplier||"—"}</td>
-                            {/* DESCRIPTION */}
-                            <td style={{padding:"7px 9px",color:"var(--text-primary)",maxWidth:"220px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title}</td>
-                            {/* AMOUNT */}
-                            <td style={{padding:"7px 9px",color:"var(--text-accent)",fontWeight:600,whiteSpace:"nowrap",textAlign:"right"}}>
-                              {opp.value?`R$ ${opp.value.toLocaleString("pt-BR")}`:"—"}
-                            </td>
-                            {/* CONFIDENCE */}
-                            <td style={{padding:"7px 9px"}}>
-                              <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:(stage?.color||"#888")+"22",color:stage?.color||"#888",fontWeight:700}}>{confPct}</span>
-                            </td>
-                            {/* FOLLOW-UP */}
-                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px",maxWidth:"200px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.nextAction||"—"}</td>
-                            {/* CONTATOS */}
-                            <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px",whiteSpace:"nowrap"}}>{opp.contact||"—"}</td>
-                            {/* Actions */}
-                            <td style={{padding:"7px 9px"}}>
-                              <button onClick={e=>{e.stopPropagation();openAI(opp);}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"13px",padding:"2px"}} title="IA">⚡</button>
-                            </td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
-                </table>
+                {(()=>{
+                  // Gerar colunas de tempo dinâmicas: mês atual, M+1, M+2, semestre
+                  const now = new Date();
+                  const MONTH_PT = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+                  const semLabel = now.getMonth()<6 ? `1S/${now.getFullYear()}` : `2S/${now.getFullYear()}`;
+                  const timeCols = [
+                    { key:`m0`, label: MONTH_PT[now.getMonth()],       month: now.getMonth(),   year: now.getFullYear(),   isSem:false },
+                    { key:`m1`, label: MONTH_PT[(now.getMonth()+1)%12], month:(now.getMonth()+1)%12, year: now.getMonth()===11?now.getFullYear()+1:now.getFullYear(), isSem:false },
+                    { key:`m2`, label: MONTH_PT[(now.getMonth()+2)%12], month:(now.getMonth()+2)%12, year: now.getMonth()>=10?now.getFullYear()+1:now.getFullYear(), isSem:false },
+                    { key:`sem`, label: semLabel, month:-1, year: now.getFullYear(), isSem:true },
+                  ];
+                  function toggleMonth(e, opp, key){
+                    e.stopPropagation();
+                    const cur = opp.months||{};
+                    updateOpp({...opp, months:{...cur,[key]:!cur[key]}});
+                  }
+                  let rows = [...opps];
+                  if(forecastFilter!=="todos") rows = rows.filter(o=>o.stage===forecastFilter||o.forecastColor===forecastFilter);
+                  rows.sort((a,b)=>{
+                    const stageOrder = ["prospeccao","qualificacao","diagnostico","proposta","neg","po_recebido","fechado"];
+                    let av,bv;
+                    if(sortCol==="stage") { av=stageOrder.indexOf(a.stage); bv=stageOrder.indexOf(b.stage); }
+                    else if(sortCol==="value") { av=a.value||0; bv=b.value||0; }
+                    else if(sortCol==="confidence") { av=a.confidence||0; bv=b.confidence||0; }
+                    else { av=(a[sortCol]||"").toString().toLowerCase(); bv=(b[sortCol]||"").toString().toLowerCase(); }
+                    if(av<bv) return sortDir==="asc"?-1:1;
+                    if(av>bv) return sortDir==="asc"?1:-1;
+                    return 0;
+                  });
+                  return (
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px",minWidth:"1100px"}}>
+                      <thead>
+                        <tr style={{background:"var(--bg-card2)",position:"sticky",top:0,zIndex:5}}>
+                          {[["neg","NEG.","36px"],["resp","RESP.","52px"],["company","CUSTOMER","110px"],["supplier","SUPPLIER","80px"],["title","DESCRIPTION","200px"],["value","AMOUNT","88px"],["stage","CONF.","60px"]].map(([key,label,w])=>(
+                            <th key={key} onClick={()=>{ if(sortCol===key){setSortDir(d=>d==="asc"?"desc":"asc");}else{setSortCol(key);setSortDir("desc");} }}
+                              style={{padding:"7px 8px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:`1px solid var(--border)`,cursor:"pointer",whiteSpace:"nowrap",width:w,userSelect:"none"}}>
+                              {label}{sortCol===key?(sortDir==="asc"?" ↑":" ↓"):""}
+                            </th>
+                          ))}
+                          {/* Colunas de tempo */}
+                          {timeCols.map(tc=>(
+                            <th key={tc.key} style={{padding:"7px 6px",textAlign:"center",color:tc.isSem?"#5DCAA5":"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:`1px solid var(--border)`,width:"44px",whiteSpace:"nowrap",borderLeft:`1px solid var(--border2)`}}>
+                              {tc.label}
+                            </th>
+                          ))}
+                          {[["nextDate","FOLLOW-UP","180px"],["contact","CONTATOS","90px"]].map(([key,label,w])=>(
+                            <th key={key} onClick={()=>{ if(sortCol===key){setSortDir(d=>d==="asc"?"desc":"asc");}else{setSortCol(key);setSortDir("desc");} }}
+                              style={{padding:"7px 8px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:`1px solid var(--border)`,cursor:"pointer",whiteSpace:"nowrap",width:w,userSelect:"none",borderLeft:`1px solid var(--border2)`}}>
+                              {label}{sortCol===key?(sortDir==="asc"?" ↑":" ↓"):""}
+                            </th>
+                          ))}
+                          <th style={{padding:"7px 6px",width:"28px"}}></th>
+                        </tr>
+                        {/* Linha de totais por coluna de tempo */}
+                        <tr style={{background:"var(--bg-card2)",borderBottom:`2px solid var(--border)`}}>
+                          <td colSpan={7} style={{padding:"4px 8px",fontSize:"10px",color:"var(--text-muted)",fontStyle:"italic"}}>Total previsto →</td>
+                          {timeCols.map(tc=>{
+                            const tot = rows.filter(o=>(o.months||{})[tc.key]).reduce((s,o)=>s+(o.value||0),0);
+                            const cnt = rows.filter(o=>(o.months||{})[tc.key]).length;
+                            return (
+                              <td key={tc.key} style={{padding:"4px 6px",textAlign:"center",fontSize:"9px",color:tc.isSem?"#5DCAA5":"var(--text-accent)",fontWeight:700,borderLeft:`1px solid var(--border2)`}}>
+                                {cnt>0?<><div>{cnt} opp</div><div>R${(tot/1000).toFixed(0)}k</div></>:"—"}
+                              </td>
+                            );
+                          })}
+                          <td colSpan={3}></td>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map(opp=>{
+                          const stage = STAGES.find(s=>s.id===opp.stage);
+                          const rowBg = opp.forecastColor==="yellow"
+                            ? "rgba(239,159,39,0.12)"
+                            : opp.forecastColor==="red"
+                            ? "rgba(226,75,74,0.12)"
+                            : opp.forecastColor==="gray"
+                            ? "rgba(95,94,90,0.15)"
+                            : "transparent";
+                          const dotColor = opp.forecastColor==="yellow"?"#EF9F27":opp.forecastColor==="red"?"#E24B4A":opp.forecastColor==="gray"?"#888780":stage?.color||"#888";
+                          const confPct = opp.stage==="fechado"?"100%":opp.stage==="po_recebido"?"90%":opp.stage==="neg"?"80%":opp.stage==="proposta"?"50%":opp.stage==="diagnostico"?"30%":opp.stage==="qualificacao"||opp.stage==="prospeccao"?"10%":"—";
+                          const months = opp.months||{};
+                          return (
+                            <tr key={opp.id} onClick={()=>setSel(opp===sel?null:opp)}
+                              style={{background:sel?.id===opp.id?"rgba(140,26,26,0.12)":rowBg,borderBottom:`1px solid var(--border2)`,cursor:"pointer",transition:"background .1s"}}>
+                              <td style={{padding:"6px 8px"}}>
+                                <div style={{width:"9px",height:"9px",borderRadius:"50%",background:dotColor,margin:"0 auto"}}/>
+                              </td>
+                              <td style={{padding:"6px 8px",color:"var(--text-secondary)",whiteSpace:"nowrap",fontSize:"11px"}}>{opp.resp||"EF"}</td>
+                              <td style={{padding:"6px 8px",fontWeight:600,color:"var(--text-primary)",whiteSpace:"nowrap"}}>{opp.company}</td>
+                              <td style={{padding:"6px 8px",color:"var(--text-secondary)",whiteSpace:"nowrap",fontSize:"11px"}}>{opp.supplier||"—"}</td>
+                              <td style={{padding:"6px 8px",color:"var(--text-primary)",maxWidth:"200px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title}</td>
+                              <td style={{padding:"6px 8px",color:"var(--text-accent)",fontWeight:600,whiteSpace:"nowrap",textAlign:"right",fontSize:"11px"}}>
+                                {opp.value?`R$ ${opp.value.toLocaleString("pt-BR")}`:"—"}
+                              </td>
+                              <td style={{padding:"6px 8px"}}>
+                                <span style={{fontSize:"10px",padding:"2px 6px",borderRadius:"8px",background:(stage?.color||"#888")+"22",color:stage?.color||"#888",fontWeight:700}}>{confPct}</span>
+                              </td>
+                              {/* Colunas de tempo — clicáveis */}
+                              {timeCols.map(tc=>{
+                                const marked = !!months[tc.key];
+                                return (
+                                  <td key={tc.key} onClick={e=>toggleMonth(e,opp,tc.key)}
+                                    style={{padding:"6px 4px",textAlign:"center",borderLeft:`1px solid var(--border2)`,cursor:"pointer"}}>
+                                    {marked
+                                      ? <div style={{width:"18px",height:"18px",borderRadius:"4px",background:tc.isSem?"#0F6E56":"#8C1A1A",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                          <span style={{color:"#fff",fontSize:"10px",fontWeight:700,lineHeight:1}}>x</span>
+                                        </div>
+                                      : <div style={{width:"18px",height:"18px",borderRadius:"4px",border:`1px solid var(--border)`,margin:"0 auto"}}/>
+                                    }
+                                  </td>
+                                );
+                              })}
+                              <td style={{padding:"6px 8px",color:"var(--text-secondary)",fontSize:"11px",maxWidth:"180px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",borderLeft:`1px solid var(--border2)`}}>{opp.nextAction||"—"}</td>
+                              <td style={{padding:"6px 8px",color:"var(--text-secondary)",fontSize:"11px",whiteSpace:"nowrap"}}>{opp.contact||"—"}</td>
+                              <td style={{padding:"6px 8px"}}>
+                                <div style={{display:"flex",gap:"4px"}}>
+                                  <button onClick={e=>{e.stopPropagation();openVisita(opp);}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-blue)",fontSize:"12px",padding:"2px"}} title="Registrar visita">📝</button>
+                                  <button onClick={e=>{e.stopPropagation();openAI(opp);}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"12px",padding:"2px"}} title="IA">⚡</button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  );
+                })()}
                 {opps.length===0 && <div style={{textAlign:"center",padding:"30px 0",color:"var(--text-muted)",fontSize:"13px"}}>Nenhuma oportunidade cadastrada</div>}
               </div>
             )}
@@ -533,6 +622,79 @@ function App() {
         )}
 
   
+        {/* ===== RELATÓRIO SEMANAL ===== */}
+        {view==="relatorio" && (
+          <div style={{flex:1,display:"flex",gap:"14px",flexWrap:"wrap"}}>
+            {/* Coluna esquerda: seleção */}
+            <div style={{width:"320px",flexShrink:0}}>
+              <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px",marginBottom:"10px"}}>
+                <div style={{fontSize:"13px",fontWeight:600,color:"var(--text-primary)",marginBottom:"10px"}}>Selecionar oportunidades</div>
+                <div style={{display:"flex",gap:"6px",marginBottom:"10px",flexWrap:"wrap"}}>
+                  <button onClick={()=>setRelSelected(opps.filter(o=>o.stage!=="fechado").map(o=>o.id))} style={{fontSize:"10px",padding:"3px 9px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>Todas abertas</button>
+                  <button onClick={()=>setRelSelected([])} style={{fontSize:"10px",padding:"3px 9px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>Limpar</button>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:"4px",maxHeight:"420px",overflowY:"auto"}}>
+                  {opps.filter(o=>o.stage!=="fechado").map(o=>{
+                    const sel = relSelected.includes(o.id);
+                    const stage = STAGES.find(s=>s.id===o.stage);
+                    const hasHistory = (o.visitHistory||[]).length>0;
+                    return (
+                      <div key={o.id} onClick={()=>toggleRelOpp(o.id)}
+                        style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 9px",borderRadius:"6px",background:sel?"rgba(140,26,26,0.12)":"var(--bg-card2)",border:`1px solid ${sel?"#8C1A1A":"var(--border)"}`,cursor:"pointer"}}>
+                        <div style={{width:"14px",height:"14px",borderRadius:"3px",border:`2px solid ${sel?"#8C1A1A":"var(--border)"}`,background:sel?"#8C1A1A":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          {sel&&<span style={{color:"#fff",fontSize:"9px",lineHeight:1}}>✓</span>}
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:"11px",fontWeight:600,color:"var(--text-primary)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{o.company}</div>
+                          <div style={{fontSize:"10px",color:"var(--text-secondary)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{o.title}</div>
+                        </div>
+                        <div style={{display:"flex",gap:"4px",alignItems:"center",flexShrink:0}}>
+                          {hasHistory&&<span style={{fontSize:"9px",color:"var(--text-blue)"}}>📝</span>}
+                          <span style={{fontSize:"9px",padding:"1px 5px",borderRadius:"6px",background:(stage?.color||"#888")+"22",color:stage?.color||"#888",fontWeight:600}}>{stage?.tag||"—"}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {relSelected.length>0&&(
+                  <button onClick={gerarRelatorio} disabled={relLoading||!apiKey}
+                    style={{width:"100%",marginTop:"12px",padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:(apiKey&&!relLoading)?"#8C1A1A":"#4A2A2A",color:(apiKey&&!relLoading)?"#FFD0D0":"#7A5050",cursor:(apiKey&&!relLoading)?"pointer":"default",fontWeight:600}}>
+                    {relLoading?"Gerando relatório...":!apiKey?"Configure a API Key primeiro":`Gerar relatório (${relSelected.length} opp)`}
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Coluna direita: relatório gerado */}
+            <div style={{flex:1,minWidth:"300px"}}>
+              {relText&&(
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"16px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                    <div style={{fontSize:"13px",fontWeight:600,color:"var(--text-primary)"}}>Relatório semanal</div>
+                    <button onClick={()=>{navigator.clipboard.writeText(relText);}} style={{fontSize:"11px",padding:"4px 12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>Copiar</button>
+                  </div>
+                  <pre style={{fontSize:"12px",color:"var(--text-primary)",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{relText}</pre>
+                </div>
+              )}
+              {!relText&&relSelected.length===0&&(
+                <div style={{textAlign:"center",padding:"60px 20px",color:"var(--text-muted)"}}>
+                  <div style={{fontSize:"32px",marginBottom:"12px"}}>📋</div>
+                  <div style={{fontSize:"13px"}}>Selecione as oportunidades à esquerda e clique em Gerar relatório</div>
+                </div>
+              )}
+              {!relText&&relSelected.length>0&&!relLoading&&(
+                <div style={{textAlign:"center",padding:"60px 20px",color:"var(--text-muted)"}}>
+                  <div style={{fontSize:"13px"}}>{relSelected.length} oportunidade(s) selecionada(s). Clique em Gerar relatório.</div>
+                </div>
+              )}
+              {relLoading&&(
+                <div style={{textAlign:"center",padding:"60px 20px",color:"var(--text-secondary)"}}>
+                  <div style={{fontSize:"13px"}}>Gerando relatório com IA...</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ===== PERFIL ===== */}
         {view==="perfil" && (
           <div style={{flex:1,maxWidth:"600px"}}>
@@ -983,6 +1145,22 @@ function App() {
                 ))}
               </div>
             </div>
+            {/* Histórico de visitas */}
+            <div style={{marginBottom:"10px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                <label style={lbl}>Histórico de visitas ({(sel.visitHistory||[]).length})</label>
+                <button onClick={()=>openVisita(sel)} style={{fontSize:"10px",padding:"2px 8px",borderRadius:"5px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-blue)",cursor:"pointer",fontWeight:600}}>+ Visita</button>
+              </div>
+              {(sel.visitHistory||[]).length===0&&<div style={{fontSize:"10px",color:"var(--text-muted)",fontStyle:"italic"}}>Nenhuma visita registrada</div>}
+              {[...(sel.visitHistory||[])].reverse().slice(0,3).map((v,i)=>(
+                <div key={v.id||i} style={{background:"var(--bg-card2)",borderRadius:"5px",padding:"7px 8px",marginBottom:"4px",borderLeft:"2px solid var(--text-blue)"}}>
+                  <div style={{fontSize:"10px",color:"var(--text-blue)",marginBottom:"2px",fontWeight:600}}>{v.date||v.createdAt}</div>
+                  <div style={{fontSize:"10px",color:"var(--text-primary)",lineHeight:1.4,marginBottom:"2px"}}>{v.summary?.slice(0,100)}{v.summary?.length>100?"…":""}</div>
+                  {v.nextStep&&<div style={{fontSize:"10px",color:"var(--text-accent)",fontWeight:600}}>→ {v.nextStep?.slice(0,60)}</div>}
+                </div>
+              ))}
+              {(sel.visitHistory||[]).length>3&&<div style={{fontSize:"10px",color:"var(--text-muted)",textAlign:"right"}}>+{(sel.visitHistory||[]).length-3} mais</div>}
+            </div>
             <div style={{display:"flex",gap:"5px"}}>
               <button onClick={()=>openAI(`Analise a oportunidade "${sel.title}" da ${sel.company} na etapa ${STAGES.find(s=>s.id===sel.stage)?.label}. Próximos passos com 3S+M?`)} style={{flex:1,padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid #6B3A3A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>Analisar com IA</button>
               <button onClick={()=>delOpp(sel.id)} style={{padding:"7px 10px",fontSize:"11px",borderRadius:"6px",border:"1px solid #5A2A2A",background:"rgba(80,20,20,0.3)",color:"#FF9090",cursor:"pointer"}}>Excluir</button>
@@ -1095,6 +1273,69 @@ function App() {
               style={{width:"100%",padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:form.title&&form.company?"#8C1A1A":"#4A2A2A",color:form.title&&form.company?"#FFD0D0":"#7A5050",cursor:form.title&&form.company?"pointer":"default",fontWeight:600}}>
               Criar oportunidade
             </button>
+          </div>
+        </div>
+
+      {/* MODAL VISITA 5W2H */}
+      {visitaModal && visitaOpp && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60,padding:"16px"}}>
+          <div style={{background:"var(--bg-card)",borderRadius:"12px",border:"1px solid var(--border)",padding:"20px",width:"520px",maxWidth:"100%",maxHeight:"90vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Registrar visita</div>
+              <button onClick={()=>setVisitaModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px"}}>✕</button>
+            </div>
+            <div style={{fontSize:"11px",color:"var(--text-accent)",marginBottom:"14px"}}>{visitaOpp.company} · {visitaOpp.title}</div>
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+              <div>
+                <label style={lbl}>Data da visita</label>
+                <input type="date" value={visitaForm.date} onChange={e=>setVisitaForm({...visitaForm,date:e.target.value})} style={inp}/>
+              </div>
+              <div>
+                <label style={lbl}>Próximo passo (When)</label>
+                <input type="date" value={visitaForm.when} onChange={e=>setVisitaForm({...visitaForm,when:e.target.value})} style={inp}/>
+              </div>
+            </div>
+
+            <div style={{marginBottom:"8px"}}>
+              <label style={lbl}>Resumo da visita *</label>
+              <textarea value={visitaForm.summary} onChange={e=>setVisitaForm({...visitaForm,summary:e.target.value})}
+                style={{...inp,height:"72px"}} placeholder="Descreva o que aconteceu na reunião/visita..."/>
+            </div>
+
+            <div style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px",marginBottom:"8px"}}>
+              <div style={{fontSize:"10px",fontWeight:600,color:"var(--text-secondary)",marginBottom:"8px",textTransform:"uppercase",letterSpacing:".08em"}}>5W2H</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                {[
+                  ["what","O quê? (What)","O que foi discutido/apresentado?"],
+                  ["why","Por quê? (Why)","Qual a necessidade/dor do cliente?"],
+                  ["who","Quem? (Who)","Quem participou? Decisores?"],
+                  ["where","Onde? (Where)","Local / departamento / linha"],
+                  ["how","Como? (How)","Como a solução resolve o problema?"],
+                  ["howMuch","Quanto? (How Much)","Valor estimado / investimento"],
+                ].map(([k,label,ph])=>(
+                  <div key={k}>
+                    <label style={lbl}>{label}</label>
+                    <textarea value={visitaForm[k]} onChange={e=>setVisitaForm({...visitaForm,[k]:e.target.value})}
+                      style={{...inp,height:"52px",fontSize:"11px"}} placeholder={ph}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{marginBottom:"14px"}}>
+              <label style={lbl}>Próximo passo (What)</label>
+              <textarea value={visitaForm.nextStep} onChange={e=>setVisitaForm({...visitaForm,nextStep:e.target.value})}
+                style={{...inp,height:"52px"}} placeholder="Ação concreta com responsável e prazo definido..."/>
+            </div>
+
+            <div style={{display:"flex",gap:"8px"}}>
+              <button onClick={saveVisita} disabled={!visitaForm.summary}
+                style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:visitaForm.summary?"#8C1A1A":"#4A2A2A",color:visitaForm.summary?"#FFD0D0":"#7A5050",cursor:visitaForm.summary?"pointer":"default",fontWeight:600}}>
+                Salvar visita
+              </button>
+              <button onClick={()=>setVisitaModal(false)} style={{padding:"10px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+            </div>
           </div>
         </div>
       )}
