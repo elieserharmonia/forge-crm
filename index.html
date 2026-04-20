@@ -112,7 +112,7 @@ function App() {
   const BUDGET_KEY = "crm_budget_v2";
   const CUR_YEAR = new Date().getFullYear();
   const emptyBudgetForm = {type:"supplier",supplier:"",client:"",targetAnual:0,target1s:0,target2s:0,realized1s:0,realized2s:0,realizedManual:0,year:CUR_YEAR,notes:""};
-  const [budgets, setBudgets] = useState(() => { try { const r=localStorage.getItem(BUDGET_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
+  const [budgets, setBudgets] = useState(() => { try { const r=localStorage.getItem(BUDGET_KEY); return r?JSON.parse(r):[{"id": "b1", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b2", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b3", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HYUNDAI", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b4", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "JACTO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b5", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b6", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b7", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "JACTO", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b8", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "RUMO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b9", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "EMBRAER", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b10", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b11", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b12", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b13", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b14", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HONDA", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b15", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HYUNDAI", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b16", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b17", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "HYUNDAI", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b18", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b19", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "RUMO", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b20", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "EMBRAER", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b21", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b22", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "CATERPILLAR", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b23", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HONDA", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b24", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b25", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b26", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b27", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b28", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b29", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "CATERPILLAR", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b30", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "JACTO", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b31", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "RUMO", "targetAnual": 200000, "target1s": 100000, "target2s": 100000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b32", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "EMBRAER", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b33", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b34", "type": "both", "negType": "TT", "supplier": "ENERPAC", "client": "RUMO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b35", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b36", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b37", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b38", "type": "both", "negType": "TT", "supplier": "STAHLWILLE", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b39", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "CATERPILLAR", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b40", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b41", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b42", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "JACTO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b43", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b44", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b45", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b46", "type": "both", "negType": "TT", "supplier": "3arm", "client": "CATERPILLAR", "targetAnual": 600000, "target1s": 300000, "target2s": 300000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b47", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b48", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b49", "type": "both", "negType": "TT", "supplier": "3arm", "client": "RUMO", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b50", "type": "both", "negType": "TT", "supplier": "3arm", "client": "EMBRAER", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b51", "type": "both", "negType": "REP", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}]; } catch { return [{"id": "b1", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b2", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b3", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HYUNDAI", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b4", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "JACTO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b5", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b6", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b7", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "JACTO", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b8", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "RUMO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b9", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "EMBRAER", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b10", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b11", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b12", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b13", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b14", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HONDA", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b15", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HYUNDAI", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b16", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b17", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "HYUNDAI", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b18", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b19", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "RUMO", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b20", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "EMBRAER", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b21", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b22", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "CATERPILLAR", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b23", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HONDA", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b24", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b25", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b26", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b27", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b28", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b29", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "CATERPILLAR", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b30", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "JACTO", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b31", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "RUMO", "targetAnual": 200000, "target1s": 100000, "target2s": 100000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b32", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "EMBRAER", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b33", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b34", "type": "both", "negType": "TT", "supplier": "ENERPAC", "client": "RUMO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b35", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b36", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b37", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b38", "type": "both", "negType": "TT", "supplier": "STAHLWILLE", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b39", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "CATERPILLAR", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b40", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b41", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b42", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "JACTO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b43", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b44", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b45", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b46", "type": "both", "negType": "TT", "supplier": "3arm", "client": "CATERPILLAR", "targetAnual": 600000, "target1s": 300000, "target2s": 300000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b47", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b48", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b49", "type": "both", "negType": "TT", "supplier": "3arm", "client": "RUMO", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b50", "type": "both", "negType": "TT", "supplier": "3arm", "client": "EMBRAER", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b51", "type": "both", "negType": "REP", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}]; } });
   const [budgetModal, setBudgetModal] = useState(false);
   const [budgetForm, setBudgetForm] = useState(emptyBudgetForm);
   const [budgetView, setBudgetView] = useState("supplier"); // supplier | client | overview
@@ -403,7 +403,7 @@ function App() {
         </div>
         <div style={{display:"flex",gap:"4px"}}>
           {[["kanban","Pipeline/Forecast"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"]].map(([v,l])=>(
-            <button key={v} onClick={()=>setView(v)} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
+            <button key={v} onClick={()=>{setView(v);if(v!=="kanban")setSel(null);}} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
           ))}
         </div>
         <button onClick={()=>setNewModal(true)} style={btn("#E1F5EE","#085041","#0F6E56")}>+ Nova oportunidade</button>
@@ -879,239 +879,248 @@ function App() {
         {/* ===== BUDGET ===== */}
         {view==="budget" && (
           <div style={{flex:1,minWidth:0}}>
+
             {/* Toolbar */}
             <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"14px",flexWrap:"wrap"}}>
               <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)",flex:1}}>Budget {CUR_YEAR}</div>
               <div style={{display:"flex",gap:"2px",background:"rgba(128,128,128,0.12)",borderRadius:"8px",padding:"3px"}}>
-                {[["supplier","Por Fornecedor"],["client","Por Cliente"],["overview","Visão Geral"]].map(([v,l])=>(
+                {[["matrix","Matriz"],["supplier","Fornecedor"],["client","Cliente"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setBudgetView(v)} style={{padding:"4px 12px",fontSize:"11px",borderRadius:"6px",border:"none",cursor:"pointer",background:budgetView===v?"#8C1A1A":"transparent",color:budgetView===v?"#fff":"var(--text-secondary)",fontWeight:budgetView===v?700:400,whiteSpace:"nowrap"}}>{l}</button>
                 ))}
               </div>
               <button onClick={()=>setBudgetModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>+ Nova meta</button>
             </div>
 
-            {/* KPI cards globais */}
+            {/* KPIs globais */}
             {(()=>{
-              const totalMetas = budgets.filter(b=>b.year===CUR_YEAR).reduce((s,b)=>s+totalMeta(b),0);
-              const totalReal  = budgets.filter(b=>b.year===CUR_YEAR).reduce((s,b)=>s+totalRealizado(b),0);
-              const pctGlobal  = totalMetas>0?Math.round(totalReal/totalMetas*100):0;
-              const autoTotal  = budgets.filter(b=>b.year===CUR_YEAR).reduce((s,b)=>s+autoRealizado(b),0);
+              const yr = budgets.filter(b=>b.year===CUR_YEAR);
+              const metaTotal = yr.reduce((s,b)=>s+totalMeta(b),0);
+              const realTotal = yr.reduce((s,b)=>s+totalRealizado(b),0);
+              const autoTotal = yr.reduce((s,b)=>s+autoRealizado(b),0);
+              const pct = metaTotal>0?Math.round(realTotal/metaTotal*100):0;
+              const pc  = pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
               return (
                 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"16px"}}>
                   {[
-                    ["Meta anual","R$ "+(totalMetas/1000).toFixed(0)+"k","var(--bg-card2)","var(--text-secondary)","var(--text-primary)"],
-                    ["Realizado","R$ "+(totalReal/1000).toFixed(0)+"k","rgba(29,158,117,0.1)","#1D9E75","#1D9E75"],
-                    ["Auto pipeline","R$ "+(autoTotal/1000).toFixed(0)+"k","rgba(55,138,221,0.1)","#378ADD","#378ADD"],
-                    ["Atingimento",pctGlobal+"%",pctGlobal>=80?"rgba(29,158,117,0.1)":pctGlobal>=50?"rgba(239,159,39,0.1)":"rgba(226,75,74,0.1)",pctGlobal>=80?"#1D9E75":pctGlobal>=50?"#EF9F27":"#E24B4A",pctGlobal>=80?"#1D9E75":pctGlobal>=50?"#EF9F27":"#E24B4A"],
-                  ].map(([l,v,bg,bc,tc])=>(
-                    <div key={l} style={{background:bg,border:`1px solid ${bc}33`,borderRadius:"8px",padding:"10px 14px"}}>
-                      <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"4px",textTransform:"uppercase",letterSpacing:".06em"}}>{l}</div>
-                      <div style={{fontSize:"20px",fontWeight:700,color:tc}}>{v}</div>
+                    ["Meta total","R$ "+(metaTotal/1000).toFixed(0)+"k","var(--bg-card2)","var(--border)","var(--text-secondary)","var(--text-primary)"],
+                    ["Realizado","R$ "+(realTotal/1000).toFixed(0)+"k","rgba(29,158,117,0.08)","rgba(29,158,117,0.3)","#1D9E75","#1D9E75"],
+                    ["Pipeline auto","R$ "+(autoTotal/1000).toFixed(0)+"k","rgba(24,95,165,0.08)","rgba(24,95,165,0.3)","#185FA5","#185FA5"],
+                    ["Atingimento",pct+"%",`rgba(${pc==="1D9E75"?"29,158,117":pc==="#EF9F27"?"239,159,39":"226,75,74"},0.08)`,pc+"44",pc,pc],
+                  ].map(([l,v,bg,bc,lc,vc])=>(
+                    <div key={l} style={{background:bg,border:`1px solid ${bc}`,borderRadius:"8px",padding:"10px 14px"}}>
+                      <div style={{fontSize:"10px",color:lc,opacity:.8,marginBottom:"4px",textTransform:"uppercase",letterSpacing:".06em"}}>{l}</div>
+                      <div style={{fontSize:"22px",fontWeight:700,color:vc}}>{v}</div>
                     </div>
                   ))}
                 </div>
               );
             })()}
 
-            {/* POR FORNECEDOR */}
-            {budgetView==="supplier" && (
-              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="supplier").length===0 && (
-                  <div style={{textAlign:"center",padding:"40px",color:"var(--text-muted)",fontSize:"13px",background:"var(--bg-card)",borderRadius:"8px",border:"1px solid var(--border)"}}>
-                    Nenhuma meta por fornecedor. Clique em "+ Nova meta" para adicionar.
-                  </div>
-                )}
-                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="supplier").map(b=>{
-                  const meta = totalMeta(b);
-                  const real = totalRealizado(b);
-                  const auto = autoRealizado(b);
-                  const pct  = meta>0?Math.round(real/meta*100):0;
-                  const pct1s= b.target1s>0?Math.round(((b.realized1s||0)+auto*0.5)/b.target1s*100):0;
-                  const pct2s= b.target2s>0?Math.round(((b.realized2s||0)+auto*0.5)/b.target2s*100):0;
-                  const pc   = pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
-                  return (
-                    <div key={b.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"14px 16px"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"10px"}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>{b.supplier}</div>
-                          {b.notes&&<div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"1px"}}>{b.notes}</div>}
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:"18px",fontWeight:700,color:pc}}>{pct}%</div>
-                          <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>R$ {(real/1000).toFixed(0)}k / R$ {(meta/1000).toFixed(0)}k</div>
-                        </div>
-                        <button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"14px",padding:"2px"}}>✕</button>
-                      </div>
-                      {/* Barra global */}
-                      <div style={{height:"6px",background:"var(--bg-card2)",borderRadius:"3px",marginBottom:"12px",overflow:"hidden"}}>
-                        <div style={{height:"100%",width:Math.min(pct,100)+"%",background:pc,borderRadius:"3px",transition:"width .4s"}}/>
-                      </div>
-                      {/* Semestres */}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                        {[["1S",b.target1s,b.realized1s,"realized1s"],["2S",b.target2s,b.realized2s,"realized2s"]].map(([sem,tgt,real2,key])=>{
-                          const p=tgt>0?Math.min(Math.round(real2/tgt*100),100):0;
-                          const col=p>=80?"#1D9E75":p>=50?"#EF9F27":"#E24B4A";
-                          return (
-                            <div key={sem} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px"}}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
-                                <span style={{fontSize:"11px",fontWeight:600,color:"var(--text-secondary)"}}>{sem}/{CUR_YEAR}</span>
-                                <span style={{fontSize:"11px",fontWeight:700,color:col}}>{p}%</span>
-                              </div>
-                              <div style={{height:"4px",background:"var(--bg-card)",borderRadius:"2px",marginBottom:"8px",overflow:"hidden"}}>
-                                <div style={{height:"100%",width:p+"%",background:col,borderRadius:"2px",transition:"width .4s"}}/>
-                              </div>
-                              <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"6px"}}>
-                                R$ {(real2||0).toLocaleString("pt-BR")} <span style={{color:"var(--text-muted)"}}>/ R$ {(tgt||0).toLocaleString("pt-BR")}</span>
-                              </div>
-                              <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-                                <span style={{fontSize:"9px",color:"var(--text-muted)"}}>Ajuste manual:</span>
-                                <input type="number" value={real2||""} onChange={e=>updateBudget({...b,[key]:Number(e.target.value)||0})}
-                                  style={{...inp,width:"90px",fontSize:"10px",padding:"3px 6px"}} placeholder="0"/>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {/* Realizado automático do pipeline */}
-                      {auto>0&&<div style={{marginTop:"8px",fontSize:"10px",color:"var(--text-blue)",background:"rgba(24,95,165,0.08)",borderRadius:"5px",padding:"5px 8px"}}>
-                        🔄 Pipeline (fechadas): R$ {auto.toLocaleString("pt-BR")}
-                      </div>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* POR CLIENTE */}
-            {budgetView==="client" && (
-              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="client").length===0 && (
-                  <div style={{textAlign:"center",padding:"40px",color:"var(--text-muted)",fontSize:"13px",background:"var(--bg-card)",borderRadius:"8px",border:"1px solid var(--border)"}}>
-                    Nenhuma meta por cliente. Clique em "+ Nova meta" para adicionar.
-                  </div>
-                )}
-                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="client").map(b=>{
-                  const meta=totalMeta(b), real=totalRealizado(b), auto=autoRealizado(b);
-                  const pct=meta>0?Math.round(real/meta*100):0;
-                  const pc=pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
-                  return (
-                    <div key={b.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"14px 16px"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"10px"}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>{b.client}</div>
-                          {b.notes&&<div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"1px"}}>{b.notes}</div>}
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:"18px",fontWeight:700,color:pc}}>{pct}%</div>
-                          <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>R$ {(real/1000).toFixed(0)}k / R$ {(meta/1000).toFixed(0)}k</div>
-                        </div>
-                        <button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"14px",padding:"2px"}}>✕</button>
-                      </div>
-                      <div style={{height:"6px",background:"var(--bg-card2)",borderRadius:"3px",marginBottom:"12px",overflow:"hidden"}}>
-                        <div style={{height:"100%",width:Math.min(pct,100)+"%",background:pc,borderRadius:"3px",transition:"width .4s"}}/>
-                      </div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                        {[["1S",b.target1s,b.realized1s,"realized1s"],["2S",b.target2s,b.realized2s,"realized2s"]].map(([sem,tgt,real2,key])=>{
-                          const p=tgt>0?Math.min(Math.round(real2/tgt*100),100):0;
-                          const col=p>=80?"#1D9E75":p>=50?"#EF9F27":"#E24B4A";
-                          return (
-                            <div key={sem} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px"}}>
-                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
-                                <span style={{fontSize:"11px",fontWeight:600,color:"var(--text-secondary)"}}>{sem}/{CUR_YEAR}</span>
-                                <span style={{fontSize:"11px",fontWeight:700,color:col}}>{p}%</span>
-                              </div>
-                              <div style={{height:"4px",background:"var(--bg-card)",borderRadius:"2px",marginBottom:"8px",overflow:"hidden"}}>
-                                <div style={{height:"100%",width:p+"%",background:col,borderRadius:"2px",transition:"width .4s"}}/>
-                              </div>
-                              <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"6px"}}>
-                                R$ {(real2||0).toLocaleString("pt-BR")} <span style={{color:"var(--text-muted)"}}>/ R$ {(tgt||0).toLocaleString("pt-BR")}</span>
-                              </div>
-                              <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-                                <span style={{fontSize:"9px",color:"var(--text-muted)"}}>Ajuste manual:</span>
-                                <input type="number" value={real2||""} onChange={e=>updateBudget({...b,[key]:Number(e.target.value)||0})}
-                                  style={{...inp,width:"90px",fontSize:"10px",padding:"3px 6px"}} placeholder="0"/>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {auto>0&&<div style={{marginTop:"8px",fontSize:"10px",color:"var(--text-blue)",background:"rgba(24,95,165,0.08)",borderRadius:"5px",padding:"5px 8px"}}>
-                        🔄 Pipeline (fechadas): R$ {auto.toLocaleString("pt-BR")}
-                      </div>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* VISÃO GERAL */}
-            {budgetView==="overview" && (
-              <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-                {/* Tabela consolidada */}
-                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",overflow:"hidden"}}>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
-                    <thead><tr style={{background:"var(--bg-card2)"}}>
-                      {["Tipo","Nome","Meta Anual","1S Meta","1S Real","2S Meta","2S Real","Pipeline","Total Real","Ating."].map(h=>(
-                        <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)",whiteSpace:"nowrap"}}>{h}</th>
-                      ))}
-                    </tr></thead>
+            {/* ── MATRIZ FORNECEDOR × CLIENTE ── */}
+            {budgetView==="matrix" && (()=>{
+              const yr = budgets.filter(b=>b.year===CUR_YEAR);
+              const suppliers = [...new Set(yr.map(b=>b.supplier))].sort();
+              const clients   = [...new Set(yr.map(b=>b.client))].sort();
+              function getB(sup,cli){ return yr.filter(b=>b.supplier===sup&&b.client===cli); }
+              function cellMeta(sup,cli){ return getB(sup,cli).reduce((s,b)=>s+totalMeta(b),0); }
+              function cellReal(sup,cli){ return getB(sup,cli).reduce((s,b)=>s+totalRealizado(b),0); }
+              function rowTotal(sup){ return yr.filter(b=>b.supplier===sup).reduce((s,b)=>s+totalMeta(b),0); }
+              function colTotal(cli){ return yr.filter(b=>b.client===cli).reduce((s,b)=>s+totalMeta(b),0); }
+              const grand = yr.reduce((s,b)=>s+totalMeta(b),0);
+              return (
+                <div style={{overflowX:"auto"}}>
+                  <table style={{borderCollapse:"collapse",fontSize:"11px",minWidth:"700px",width:"100%"}}>
+                    <thead>
+                      <tr style={{background:"var(--bg-card2)"}}>
+                        <th style={{padding:"8px 10px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,borderBottom:"1px solid var(--border)",position:"sticky",left:0,background:"var(--bg-card2)",minWidth:"110px"}}>Fornecedor</th>
+                        {clients.map(c=>(
+                          <th key={c} style={{padding:"8px 8px",textAlign:"center",color:"var(--text-secondary)",fontWeight:600,borderBottom:"1px solid var(--border)",whiteSpace:"nowrap",fontSize:"10px"}}>{c}</th>
+                        ))}
+                        <th style={{padding:"8px 8px",textAlign:"right",color:"var(--text-accent)",fontWeight:700,borderBottom:"1px solid var(--border)",whiteSpace:"nowrap"}}>TOTAL</th>
+                      </tr>
+                    </thead>
                     <tbody>
-                      {budgets.filter(b=>b.year===CUR_YEAR).length===0&&(
-                        <tr><td colSpan={10} style={{padding:"20px",textAlign:"center",color:"var(--text-muted)",fontSize:"12px"}}>Nenhuma meta cadastrada para {CUR_YEAR}</td></tr>
-                      )}
-                      {budgets.filter(b=>b.year===CUR_YEAR).map(b=>{
-                        const meta=totalMeta(b), real=totalRealizado(b), auto=autoRealizado(b);
-                        const pct=meta>0?Math.round(real/meta*100):0;
-                        const pc=pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                      {suppliers.map(sup=>{
+                        const rt = rowTotal(sup);
                         return (
-                          <tr key={b.id} style={{borderBottom:"1px solid var(--border2)"}}>
-                            <td style={{padding:"7px 10px"}}><span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"4px",background:b.type==="supplier"?"rgba(24,95,165,0.15)":"rgba(140,26,26,0.15)",color:b.type==="supplier"?"#185FA5":"var(--text-accent)",fontWeight:600}}>{b.type==="supplier"?"FORN":"CLI"}</span></td>
-                            <td style={{padding:"7px 10px",fontWeight:600,color:"var(--text-primary)"}}>{b.type==="supplier"?b.supplier:b.client}</td>
-                            <td style={{padding:"7px 10px",color:"var(--text-secondary)"}}>R$ {(meta/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px",color:"var(--text-secondary)"}}>R$ {((b.target1s||0)/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px",color:"var(--text-green)"}}>R$ {((b.realized1s||0)/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px",color:"var(--text-secondary)"}}>R$ {((b.target2s||0)/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px",color:"var(--text-green)"}}>R$ {((b.realized2s||0)/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px",color:"var(--text-blue)"}}>R$ {(auto/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px",fontWeight:600,color:pc}}>R$ {(real/1000).toFixed(0)}k</td>
-                            <td style={{padding:"7px 10px"}}><span style={{fontWeight:700,color:pc}}>{pct}%</span></td>
+                          <tr key={sup} style={{borderBottom:"1px solid var(--border2)"}}>
+                            <td style={{padding:"8px 10px",fontWeight:600,color:"var(--text-primary)",position:"sticky",left:0,background:"var(--bg-card)",whiteSpace:"nowrap"}}>{sup}</td>
+                            {clients.map(cli=>{
+                              const m = cellMeta(sup,cli);
+                              const r = cellReal(sup,cli);
+                              const p = m>0?Math.round(r/m*100):0;
+                              const pc2 = p>=80?"#1D9E75":p>=50?"#EF9F27":"#E24B4A";
+                              return (
+                                <td key={cli} style={{padding:"6px 8px",textAlign:"center",verticalAlign:"middle"}}>
+                                  {m>0?(
+                                    <div style={{display:"inline-block",minWidth:"64px"}}>
+                                      <div style={{fontSize:"11px",fontWeight:600,color:"var(--text-primary)"}}>R$ {(m/1000).toFixed(0)}k</div>
+                                      <div style={{height:"3px",background:"var(--bg-card2)",borderRadius:"2px",margin:"2px 0",overflow:"hidden"}}>
+                                        <div style={{height:"100%",width:Math.min(p,100)+"%",background:pc2,borderRadius:"2px"}}/>
+                                      </div>
+                                      {r>0&&<div style={{fontSize:"9px",color:pc2,fontWeight:600}}>{p}%</div>}
+                                    </div>
+                                  ):<span style={{color:"var(--text-muted)"}}>—</span>}
+                                </td>
+                              );
+                            })}
+                            <td style={{padding:"8px",textAlign:"right",fontWeight:700,color:"var(--text-accent)"}}>R$ {(rt/1000).toFixed(0)}k</td>
                           </tr>
                         );
                       })}
+                      {/* Linha de totais */}
+                      <tr style={{background:"var(--bg-card2)",borderTop:"2px solid var(--border)"}}>
+                        <td style={{padding:"8px 10px",fontWeight:700,color:"var(--text-accent)",position:"sticky",left:0,background:"var(--bg-card2)"}}>TOTAL</td>
+                        {clients.map(cli=>(
+                          <td key={cli} style={{padding:"8px",textAlign:"center",fontWeight:700,color:"var(--text-primary)"}}>R$ {(colTotal(cli)/1000).toFixed(0)}k</td>
+                        ))}
+                        <td style={{padding:"8px",textAlign:"right",fontWeight:700,color:"var(--text-accent)"}}>R$ {(grand/1000).toFixed(0)}k</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
+              );
+            })()}
+
+            {/* ── POR FORNECEDOR ── */}
+            {budgetView==="supplier" && (()=>{
+              const yr = budgets.filter(b=>b.year===CUR_YEAR);
+              const suppliers = [...new Set(yr.map(b=>b.supplier))].sort();
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                  {suppliers.map(sup=>{
+                    const entries = yr.filter(b=>b.supplier===sup);
+                    const meta = entries.reduce((s,b)=>s+totalMeta(b),0);
+                    const real = entries.reduce((s,b)=>s+totalRealizado(b),0);
+                    const auto = entries.reduce((s,b)=>s+autoRealizado(b),0);
+                    const pct  = meta>0?Math.round(real/meta*100):0;
+                    const pc   = pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                    return (
+                      <div key={sup} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"14px 16px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"8px"}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>{sup}</div>
+                            <div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"1px"}}>{entries.length} cliente(s) com meta</div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:"18px",fontWeight:700,color:pc}}>{pct}%</div>
+                            <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>R$ {(real/1000).toFixed(0)}k / R$ {(meta/1000).toFixed(0)}k</div>
+                          </div>
+                        </div>
+                        <div style={{height:"5px",background:"var(--bg-card2)",borderRadius:"3px",marginBottom:"10px",overflow:"hidden"}}>
+                          <div style={{height:"100%",width:Math.min(pct,100)+"%",background:pc,borderRadius:"3px",transition:"width .4s"}}/>
+                        </div>
+                        {/* Detalhamento por cliente */}
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
+                          {entries.map(b=>{
+                            const bm=totalMeta(b), br=totalRealizado(b);
+                            const bp=bm>0?Math.round(br/bm*100):0;
+                            const bpc=bp>=80?"#1D9E75":bp>=50?"#EF9F27":"#E24B4A";
+                            return (
+                              <div key={b.id} style={{background:"var(--bg-card2)",borderRadius:"7px",padding:"7px 10px",minWidth:"120px",flex:1}}>
+                                <div style={{fontSize:"10px",fontWeight:600,color:"var(--text-primary)",marginBottom:"2px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{b.client}</div>
+                                <div style={{fontSize:"12px",fontWeight:700,color:"var(--text-accent)"}}>R$ {(bm/1000).toFixed(0)}k</div>
+                                <div style={{height:"3px",background:"var(--bg-card)",borderRadius:"2px",margin:"4px 0",overflow:"hidden"}}>
+                                  <div style={{height:"100%",width:Math.min(bp,100)+"%",background:bpc,borderRadius:"2px"}}/>
+                                </div>
+                                <div style={{display:"flex",alignItems:"center",gap:"4px",marginTop:"4px"}}>
+                                  <input type="number" value={b.realized1s||""} onChange={e=>updateBudget({...b,realized1s:Number(e.target.value)||0})}
+                                    style={{...inp,width:"60px",fontSize:"10px",padding:"2px 5px"}} placeholder="1S"/>
+                                  <input type="number" value={b.realized2s||""} onChange={e=>updateBudget({...b,realized2s:Number(e.target.value)||0})}
+                                    style={{...inp,width:"60px",fontSize:"10px",padding:"2px 5px"}} placeholder="2S"/>
+                                </div>
+                                {autoRealizado(b)>0&&<div style={{fontSize:"9px",color:"var(--text-blue)",marginTop:"3px"}}>🔄 R$ {(autoRealizado(b)/1000).toFixed(0)}k auto</div>}
+                                <button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"9px",marginTop:"3px",padding:0}}>excluir</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {auto>0&&<div style={{marginTop:"8px",fontSize:"10px",color:"var(--text-blue)",background:"rgba(24,95,165,0.08)",borderRadius:"5px",padding:"5px 8px"}}>🔄 Pipeline (fechadas): R$ {auto.toLocaleString("pt-BR")}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* ── POR CLIENTE ── */}
+            {budgetView==="client" && (()=>{
+              const yr = budgets.filter(b=>b.year===CUR_YEAR);
+              const clients = [...new Set(yr.map(b=>b.client))].sort();
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                  {clients.map(cli=>{
+                    const entries = yr.filter(b=>b.client===cli);
+                    const meta = entries.reduce((s,b)=>s+totalMeta(b),0);
+                    const real = entries.reduce((s,b)=>s+totalRealizado(b),0);
+                    const auto = entries.reduce((s,b)=>s+autoRealizado(b),0);
+                    const pct  = meta>0?Math.round(real/meta*100):0;
+                    const pc   = pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                    return (
+                      <div key={cli} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"14px 16px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"8px"}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>{cli}</div>
+                            <div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"1px"}}>{entries.length} fornecedor(es) com meta</div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:"18px",fontWeight:700,color:pc}}>{pct}%</div>
+                            <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>R$ {(real/1000).toFixed(0)}k / R$ {(meta/1000).toFixed(0)}k</div>
+                          </div>
+                        </div>
+                        <div style={{height:"5px",background:"var(--bg-card2)",borderRadius:"3px",marginBottom:"10px",overflow:"hidden"}}>
+                          <div style={{height:"100%",width:Math.min(pct,100)+"%",background:pc,borderRadius:"3px",transition:"width .4s"}}/>
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
+                          {entries.map(b=>{
+                            const bm=totalMeta(b), br=totalRealizado(b);
+                            const bp=bm>0?Math.round(br/bm*100):0;
+                            const bpc=bp>=80?"#1D9E75":bp>=50?"#EF9F27":"#E24B4A";
+                            return (
+                              <div key={b.id} style={{background:"var(--bg-card2)",borderRadius:"7px",padding:"7px 10px",minWidth:"110px",flex:1}}>
+                                <div style={{fontSize:"10px",fontWeight:600,color:"var(--text-primary)",marginBottom:"2px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{b.supplier}</div>
+                                <div style={{fontSize:"12px",fontWeight:700,color:"var(--text-accent)"}}>R$ {(bm/1000).toFixed(0)}k</div>
+                                <div style={{height:"3px",background:"var(--bg-card)",borderRadius:"2px",margin:"4px 0",overflow:"hidden"}}>
+                                  <div style={{height:"100%",width:Math.min(bp,100)+"%",background:bpc,borderRadius:"2px"}}/>
+                                </div>
+                                <div style={{display:"flex",gap:"4px",marginTop:"4px"}}>
+                                  <input type="number" value={b.realized1s||""} onChange={e=>updateBudget({...b,realized1s:Number(e.target.value)||0})}
+                                    style={{...inp,width:"60px",fontSize:"10px",padding:"2px 5px"}} placeholder="1S"/>
+                                  <input type="number" value={b.realized2s||""} onChange={e=>updateBudget({...b,realized2s:Number(e.target.value)||0})}
+                                    style={{...inp,width:"60px",fontSize:"10px",padding:"2px 5px"}} placeholder="2S"/>
+                                </div>
+                                {autoRealizado(b)>0&&<div style={{fontSize:"9px",color:"var(--text-blue)",marginTop:"3px"}}>🔄 R$ {(autoRealizado(b)/1000).toFixed(0)}k auto</div>}
+                                <button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"9px",marginTop:"3px",padding:0}}>excluir</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {auto>0&&<div style={{marginTop:"8px",fontSize:"10px",color:"var(--text-blue)",background:"rgba(24,95,165,0.08)",borderRadius:"5px",padding:"5px 8px"}}>🔄 Pipeline: R$ {auto.toLocaleString("pt-BR")}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* MODAL NOVA META */}
             {budgetModal && (
               <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60}}>
                 <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"12px",padding:"20px",width:"400px",maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
-                    <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>Nova meta de budget</div>
+                    <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>Nova meta</div>
                     <button onClick={()=>setBudgetModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
                   </div>
-                  {/* Tipo */}
-                  <div style={{marginBottom:"12px"}}>
-                    <label style={lbl}>Tipo de meta</label>
-                    <div style={{display:"flex",gap:"6px"}}>
-                      {[["supplier","Por Fornecedor"],["client","Por Cliente"]].map(([v,l])=>(
-                        <button key={v} onClick={()=>setBudgetForm({...budgetForm,type:v})}
-                          style={{flex:1,padding:"8px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${budgetForm.type===v?"#8C1A1A":"var(--border)"}`,background:budgetForm.type===v?"rgba(140,26,26,0.15)":"transparent",color:budgetForm.type===v?"var(--text-accent)":"var(--text-secondary)",cursor:"pointer",fontWeight:budgetForm.type===v?600:400}}>{l}</button>
-                      ))}
-                    </div>
-                  </div>
-                  {budgetForm.type==="supplier"
-                    ? <div style={{marginBottom:"10px"}}><label style={lbl}>Fornecedor *</label><input value={budgetForm.supplier} onChange={e=>setBudgetForm({...budgetForm,supplier:e.target.value})} style={inp} placeholder="ex: Norbar"/></div>
-                    : <div style={{marginBottom:"10px"}}><label style={lbl}>Cliente *</label><input value={budgetForm.client} onChange={e=>setBudgetForm({...budgetForm,client:e.target.value})} style={inp} placeholder="ex: Caterpillar"/></div>
-                  }
                   <div style={{marginBottom:"10px"}}>
-                    <label style={lbl}>Meta anual (R$) — ou preencha por semestre</label>
-                    <input type="number" value={budgetForm.targetAnual||""} onChange={e=>setBudgetForm({...budgetForm,targetAnual:e.target.value})} style={inp} placeholder="0"/>
+                    <label style={lbl}>Fornecedor *</label>
+                    <input value={budgetForm.supplier} onChange={e=>setBudgetForm({...budgetForm,supplier:e.target.value})} style={inp} placeholder="ex: Norbar"/>
+                  </div>
+                  <div style={{marginBottom:"10px"}}>
+                    <label style={lbl}>Cliente *</label>
+                    <input value={budgetForm.client} onChange={e=>setBudgetForm({...budgetForm,client:e.target.value})} style={inp} placeholder="ex: Caterpillar"/>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
-                    {[["target1s",`Meta 1S/${CUR_YEAR}`],["target2s",`Meta 2S/${CUR_YEAR}`],["realized1s",`Realizado 1S (manual)`],["realized2s",`Realizado 2S (manual)`]].map(([k,l])=>(
+                    {[["targetAnual",`Meta Anual (R$)`],["target1s",`Meta 1S`],["target2s",`Meta 2S`],["realized1s","Realizado 1S"],["realized2s","Realizado 2S"]].map(([k,l])=>(
                       <div key={k}>
                         <label style={lbl}>{l}</label>
                         <input type="number" value={budgetForm[k]||""} onChange={e=>setBudgetForm({...budgetForm,[k]:e.target.value})} style={inp} placeholder="0"/>
@@ -1120,12 +1129,12 @@ function App() {
                   </div>
                   <div style={{marginBottom:"14px"}}>
                     <label style={lbl}>Notas</label>
-                    <textarea value={budgetForm.notes} onChange={e=>setBudgetForm({...budgetForm,notes:e.target.value})} style={{...inp,height:"50px"}}/>
+                    <textarea value={budgetForm.notes} onChange={e=>setBudgetForm({...budgetForm,notes:e.target.value})} style={{...inp,height:"44px"}}/>
                   </div>
                   <div style={{display:"flex",gap:"8px"}}>
-                    <button onClick={addBudget} disabled={!budgetForm.supplier&&!budgetForm.client}
-                      style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:(budgetForm.supplier||budgetForm.client)?"#8C1A1A":"#4A2A2A",color:(budgetForm.supplier||budgetForm.client)?"#FFD0D0":"#7A5050",cursor:(budgetForm.supplier||budgetForm.client)?"pointer":"default",fontWeight:600}}>
-                      Salvar meta
+                    <button onClick={addBudget} disabled={!budgetForm.supplier||!budgetForm.client}
+                      style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:(budgetForm.supplier&&budgetForm.client)?"#8C1A1A":"#4A2A2A",color:(budgetForm.supplier&&budgetForm.client)?"#FFD0D0":"#7A5050",cursor:(budgetForm.supplier&&budgetForm.client)?"pointer":"default",fontWeight:600}}>
+                      Salvar
                     </button>
                     <button onClick={()=>setBudgetModal(false)} style={{padding:"10px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
                   </div>
