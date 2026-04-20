@@ -211,37 +211,9 @@ function App() {
     return ()=>clearInterval(interval);
   }, [tasks, notifSettings]);
 
-  // Gerar link mailto para Outlook com tarefas do dia
-  function gerarEmailDia(){
-    const today2 = new Date().toISOString().slice(0,10);
-    const tasksDia = tasks.filter(t=>t.date===today2&&!t.done);
-    if(tasksDia.length===0){ alert("Nenhuma tarefa para hoje."); return; }
-    const corpo = tasksDia.map(t=>"• "+(t.time||"—")+" | "+t.title+" — "+(t.company||"")+(t.notes?"\n  "+t.notes:"")).join("\n\n");
-    const subject = "Tarefas do dia — "+today2;
-    const emailAddr = profile.email||"";
-    window.location.href = "mailto:"+emailAddr+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent("Bom dia!\n\nSuas tarefas de hoje:\n\n"+corpo);
-  }
 
-  // Gerar link .ics para importar no Outlook/Calendar
-  function gerarICS(task){
-    if(!task.date||!task.time){ alert("A tarefa precisa de data e horário para exportar ao Outlook."); return; }
-    const dt = task.date.replace(/-/g,"")+"T"+task.time.replace(/:/g,"")+"00";
-    const dtEnd = task.date.replace(/-/g,"")+"T"+String(Number(task.time.replace(":",""))+100).padStart(4,"0")+"00";
-    const ics = [
-      "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SinueloCRM//PT",
-      "BEGIN:VEVENT",
-      `DTSTART:${dt}`,`DTEND:${dtEnd}`,
-      `SUMMARY:${task.title} — ${task.company||""}`,
-      `DESCRIPTION:${task.notes||""}`,
-      "END:VEVENT","END:VCALENDAR"
-    ].join("
-");
-    const blob = new Blob([ics],{type:"text/calendar"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href=url; a.download=`tarefa_${task.id}.ics`; a.click();
-    URL.revokeObjectURL(url);
-  }
+
+
 
   // CLIENTES DINÂMICOS
   const CLIENTS_KEY = "crm_clients_v2";
@@ -738,7 +710,7 @@ function App() {
               </div>
               <input value={taskSearch} onChange={e=>setTaskSearch(e.target.value)} placeholder="Buscar tarefa..."
                 style={{...inp,maxWidth:"200px"}}/>
-              <button onClick={gerarEmailDia} style={{padding:"5px 12px",fontSize:"11px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}} title="Enviar e-mail com tarefas do dia para o Outlook">📧 E-mail do dia</button>
+
               <button onClick={()=>{setTaskForm(emptyTask);setTaskModal(true);}} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>+ Nova tarefa</button>
             </div>
 
@@ -812,7 +784,7 @@ function App() {
                             {t.notes&&<div style={{fontSize:"11px",color:"var(--text-secondary)",marginTop:"4px",lineHeight:1.4}}>{t.notes}</div>}
                           </div>
                           <div style={{display:"flex",gap:"4px",flexShrink:0}}>
-                            <button onClick={()=>gerarICS(t)} title="Exportar para Outlook (.ics)" style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-blue)",fontSize:"13px",padding:"2px"}}>📆</button>
+
                             <button onClick={()=>delTask(t.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"13px",padding:"2px"}}>✕</button>
                           </div>
                         </div>
