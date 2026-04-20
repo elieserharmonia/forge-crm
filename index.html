@@ -82,6 +82,7 @@ function saveData(d) {
 function App() {
   const [opps, setOpps]           = useState(() => loadData() || DEMO);
   const [sel, setSel]             = useState(null);
+  const _setSel = (v) => { setSel(v); if(v) setDetailTab("dados"); };
   const [view, setView]           = useState("kanban");
   const PIPE_VIEW_KEY = "crm_pipe_view";
   const [pipelineView, setPipelineView] = useState(() => localStorage.getItem("crm_pipe_view") || "kanban");
@@ -108,13 +109,31 @@ function App() {
   function saveProfile(p){ setProfile(p); try{ localStorage.setItem(PROFILE_KEY,JSON.stringify(p)); }catch{} setProfileEdit(false); }
 
   // BUDGET
-  const BUDGET_KEY = "crm_budget_v1";
+  const BUDGET_KEY = "crm_budget_v2";
+  const CUR_YEAR = new Date().getFullYear();
+  const emptyBudgetForm = {type:"supplier",supplier:"",client:"",targetAnual:0,target1s:0,target2s:0,realized1s:0,realized2s:0,realizedManual:0,year:CUR_YEAR,notes:""};
   const [budgets, setBudgets] = useState(() => { try { const r=localStorage.getItem(BUDGET_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
   const [budgetModal, setBudgetModal] = useState(false);
-  const [budgetForm, setBudgetForm] = useState({client:"",supplier:"",target:0,realized:0,year:new Date().getFullYear(),notes:""});
+  const [budgetForm, setBudgetForm] = useState(emptyBudgetForm);
+  const [budgetView, setBudgetView] = useState("supplier"); // supplier | client | overview
   function saveBudgets(b){ setBudgets(b); try{ localStorage.setItem(BUDGET_KEY,JSON.stringify(b)); }catch{}; }
-  function addBudget(){ if(!budgetForm.client) return; saveBudgets([...budgets,{...budgetForm,id:Date.now(),target:Number(budgetForm.target),realized:Number(budgetForm.realized)}]); setBudgetForm({client:"",supplier:"",target:0,realized:0,year:new Date().getFullYear(),notes:""}); setBudgetModal(false); }
+  function addBudget(){
+    if(!budgetForm.supplier&&!budgetForm.client) return;
+    const b = {...budgetForm, id:Date.now(), targetAnual:Number(budgetForm.targetAnual)||0, target1s:Number(budgetForm.target1s)||0, target2s:Number(budgetForm.target2s)||0, realized1s:Number(budgetForm.realized1s)||0, realized2s:Number(budgetForm.realized2s)||0, realizedManual:Number(budgetForm.realizedManual)||0 };
+    saveBudgets([...budgets, b]);
+    setBudgetForm(emptyBudgetForm);
+    setBudgetModal(false);
+  }
   function delBudget(id){ saveBudgets(budgets.filter(b=>b.id!==id)); }
+  function updateBudget(upd){ saveBudgets(budgets.map(b=>b.id===upd.id?upd:b)); }
+  // Realizado automático: soma oportunidades fechadas por fornecedor/cliente
+  function autoRealizado(b){
+    const closed = opps.filter(o=>o.stage==="fechado"||o.stage==="pos_venda");
+    if(b.type==="supplier") return closed.filter(o=>o.supplier&&o.supplier.toLowerCase().includes((b.supplier||"").toLowerCase())).reduce((s,o)=>s+(o.value||0),0);
+    return closed.filter(o=>o.company&&o.company.toLowerCase().includes((b.client||"").toLowerCase())).reduce((s,o)=>s+(o.value||0),0);
+  }
+  function totalRealizado(b){ return (b.realized1s||0)+(b.realized2s||0)+(b.realizedManual||0)+autoRealizado(b); }
+  function totalMeta(b){ return b.targetAnual||((b.target1s||0)+(b.target2s||0)); }
 
   // PÓS VENDA
   const POSV_KEY = "crm_posvendas_v1";
@@ -149,6 +168,28 @@ function App() {
   const [clientsData, setClientsData] = useState(() => {
     try { const r=localStorage.getItem(CLIENTS_KEY); return r?JSON.parse(r):CLIENTS; } catch { return CLIENTS; }
   });
+  const [detailTab, setDetailTab] = useState("dados");
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  // Configurações do forecast (colunas customizáveis)
+  const SETTINGS_KEY = "crm_settings_v1";
+  const defaultSettings = {
+    forecastCols: [
+      {key:"neg",   label:"NEG.",        visible:true,  width:"36px"},
+      {key:"resp",  label:"RESP.",       visible:true,  width:"52px"},
+      {key:"company",label:"CUSTOMER",  visible:true,  width:"110px"},
+      {key:"supplier",label:"SUPPLIER", visible:true,  width:"80px"},
+      {key:"title", label:"DESCRIPTION",visible:true,  width:"200px"},
+      {key:"value", label:"AMOUNT",     visible:true,  width:"88px"},
+      {key:"stage", label:"CONF.",       visible:true,  width:"60px"},
+    ]
+  };
+  const [settings, setSettings] = useState(()=>{
+    try{ const r=localStorage.getItem(SETTINGS_KEY); return r?JSON.parse(r):defaultSettings; }catch{ return defaultSettings; }
+  });
+  function saveSettings(s){ setSettings(s); try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(s)); }catch{}; }
+  const [histPeriodFrom, setHistPeriodFrom] = useState("");
+  const [histPeriodTo, setHistPeriodTo] = useState("");
   const [clientSearch, setClientSearch] = useState("");
   const [selClient, setSelClient] = useState(null);
   const [clientView2, setClientView2] = useState("list");
@@ -361,7 +402,7 @@ function App() {
           <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",fontWeight:600}}>3S+M</span>
         </div>
         <div style={{display:"flex",gap:"4px"}}>
-          {[["kanban","Pipeline/Forecast"],["dashboard","Funil"],["tasks","Follow-ups"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"],["perfil","Perfil"]].map(([v,l])=>(
+          {[["kanban","Pipeline/Forecast"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"]].map(([v,l])=>(
             <button key={v} onClick={()=>setView(v)} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
           ))}
         </div>
@@ -369,12 +410,11 @@ function App() {
         <button onClick={()=>openAI(null)} style={btn("#EEEDFE","#3C3489","#534AB7")}>Gestor IA</button>
         <button onClick={exportData} style={btn("#f5f5f3","#555","#ddd")} title="Exportar backup">↓ Backup</button>
         <label style={{...btn("#f5f5f3","#555","#ddd"),cursor:"pointer"}} title="Importar dados">↑ Importar<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/></label>
-        <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);}} style={{...btn("#f5f5f3","#555","#ddd"),fontSize:"11px"}}>⚙ API Key</button>
-        <div style={{display:"flex",gap:"2px",background:"rgba(128,128,128,0.12)",borderRadius:"8px",padding:"3px",marginLeft:"4px"}}>
-          {[["dark","☾"],["system","⊙"],["light","☀"]].map(([t,icon])=>(
-            <button key={t} onClick={()=>setThemePref(t)} title={t==="dark"?"Escuro":t==="light"?"Claro":"Sistema"} style={{padding:"3px 7px",fontSize:"12px",borderRadius:"6px",border:"none",cursor:"pointer",background:themePref===t?"#8C1A1A":"transparent",color:themePref===t?"#fff":"var(--text-secondary)",fontWeight:themePref===t?700:400,transition:"all .15s"}}>{icon}</button>
-          ))}
-        </div>
+        <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);}} style={{...btn("#f5f5f3","#555","#ddd"),fontSize:"11px"}}>🔑 API Key</button>
+        <button onClick={()=>setShowSettings(true)} title="Configurações" style={{width:"32px",height:"32px",borderRadius:"8px",border:"1px solid var(--border)",background:"var(--bg-card2)",cursor:"pointer",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-secondary)"}}>⚙</button>
+        <button onClick={()=>setShowProfile(true)} title={profile.userName||"Perfil"} style={{width:"34px",height:"34px",borderRadius:"50%",border:"2px solid #8C1A1A",background:"#8C1A1A",cursor:"pointer",overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
+          {profile.photo ? <img src={profile.photo} style={{width:"34px",height:"34px",objectFit:"cover"}} alt="perfil"/> : <span style={{fontSize:"11px",fontWeight:700,color:"#FFD0D0",pointerEvents:"none"}}>{(profile.userName||"U").split(" ").map(w=>w[0]).slice(0,2).join("")}</span>}
+        </button>
       </div>
 
       {/* MÉTRICAS */}
@@ -600,61 +640,7 @@ function App() {
         )}
 
         {/* FUNIL */}
-        {view==="dashboard" && (
-          <div style={{flex:1}}>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:"8px",marginBottom:"14px"}}>
-              {STAGES.map(s=>{
-                const count = opps.filter(o=>o.stage===s.id).length;
-                const val   = opps.filter(o=>o.stage===s.id).reduce((a,o)=>a+o.value,0);
-                const pct   = totalVal>0?Math.round(val/totalVal*100):0;
-                return (
-                  <div key={s.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"12px",borderTop:`3px solid ${s.color}`}}>
-                    <div style={{fontSize:"10px",color:"#bbb",marginBottom:"4px"}}>{s.tag} · {s.label}</div>
-                    <div style={{fontSize:"22px",fontWeight:600,marginBottom:"2px",color:"var(--text-primary)"}}>{count}</div>
-                    <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>R$ {(val/1000).toFixed(0)}k · {pct}%</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px"}}>
-              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"10px",color:"var(--text-primary)"}}>Todas as oportunidades</div>
-              {[...opps].sort((a,b)=>b.value-a.value).map(opp=>(
-                <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 0",borderBottom:"1px solid var(--border2)",cursor:"pointer"}}>
-                  <div style={{width:"8px",height:"8px",borderRadius:"50%",background:STAGES.find(s=>s.id===opp.stage)?.color,flexShrink:0}}/>
-                  <span style={{fontSize:"12px",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title}</span>
-                  <span style={{fontSize:"11px",color:"var(--text-secondary)",minWidth:"72px",flexShrink:0}}>{opp.company}</span>
-                  <span style={{fontSize:"12px",fontWeight:600,minWidth:"54px",textAlign:"right",flexShrink:0,color:"var(--text-primary)"}}>R$ {(opp.value/1000).toFixed(0)}k</span>
-                  <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],flexShrink:0}}>{opp.priority}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* FOLLOW-UPS */}
-        {view==="tasks" && (
-          <div style={{flex:1}}>
-            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px"}}>
-              <div style={{fontSize:"12px",fontWeight:600,marginBottom:"12px",color:"var(--text-primary)"}}>Follow-ups por data</div>
-              {[...opps].filter(o=>o.nextAction).sort((a,b)=>(a.nextDate||"9999")>(b.nextDate||"9999")?1:-1).map(opp=>{
-                const late = opp.nextDate&&opp.nextDate<today;
-                const stg  = STAGES.find(s=>s.id===opp.stage);
-                return (
-                  <div key={opp.id} onClick={()=>{setSel(opp);setView("kanban");}} style={{display:"flex",gap:"12px",padding:"10px 0",borderBottom:"1px solid var(--border2)",cursor:"pointer",alignItems:"flex-start"}}>
-                    <div style={{minWidth:"74px",fontSize:"11px",color:late?"#FF7777":"#5A5050",fontWeight:late?600:400}}>{opp.nextDate||"—"}</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:"12px",fontWeight:600,marginBottom:"2px",color:"var(--text-primary)"}}>{opp.nextAction}</div>
-                      <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>{opp.company} · {opp.title}</div>
-                    </div>
-                    <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:stg?.color+"22",color:stg?.color,fontWeight:600,flexShrink:0}}>{stg?.tag}</span>
-                    <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[opp.priority],color:PRI_TXT[opp.priority],flexShrink:0}}>{opp.priority}</span>
-                  </div>
-                );
-              })}
-              {opps.filter(o=>o.nextAction).length===0 && <div style={{fontSize:"13px",color:"#bbb",textAlign:"center",padding:"20px 0"}}>Nenhum follow-up cadastrado</div>}
-            </div>
-          </div>
-        )}
 
 
         {/* ===== CLIENTES ===== */}
@@ -889,128 +875,265 @@ function App() {
         )}
 
         {/* ===== PERFIL ===== */}
-        {view==="perfil" && (
-          <div style={{flex:1,maxWidth:"600px"}}>
-            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"20px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
-                <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Perfil e Configurações</div>
-                {!profileEdit && <button onClick={()=>{setProfileDraft({...profile});setProfileEdit(true);}} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>Editar</button>}
-              </div>
-              {!profileEdit ? (
-                <div>
-                  <div style={{display:"flex",gap:"16px",alignItems:"center",marginBottom:"18px"}}>
-                    <div style={{width:"64px",height:"64px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",fontWeight:700,color:"#FFD0D0",flexShrink:0}}>
-                      {profile.photo ? <img src={profile.photo} style={{width:"64px",height:"64px",borderRadius:"50%",objectFit:"cover"}} alt="foto"/> : (profile.userName||"U").split(" ").map(w=>w[0]).slice(0,2).join("")}
-                    </div>
-                    <div>
-                      <div style={{fontSize:"16px",fontWeight:700,color:"var(--text-primary)"}}>{profile.userName||"—"}</div>
-                      <div style={{fontSize:"12px",color:"var(--text-accent)"}}>{profile.role||"—"}</div>
-                      <div style={{fontSize:"12px",color:"var(--text-secondary)"}}>{profile.companyName||"—"}</div>
-                    </div>
-                  </div>
-                  {[["E-mail",profile.email],["Telefone",profile.phone],["LinkedIn",profile.linkedin],["Região",profile.region]].map(([k,v])=>(
-                    <div key={k} style={{display:"flex",gap:"12px",padding:"7px 0",borderBottom:"1px solid var(--border2)"}}>
-                      <span style={{fontSize:"12px",color:"var(--text-secondary)",width:"80px",flexShrink:0}}>{k}</span>
-                      <span style={{fontSize:"12px",color:"var(--text-primary)"}}>{v||"—"}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div>
-                  {[["companyName","Empresa"],["userName","Nome"],["role","Cargo"],["email","E-mail"],["phone","Telefone"],["linkedin","LinkedIn"],["region","Região"]].map(([k,label])=>(
-                    <div key={k} style={{marginBottom:"10px"}}>
-                      <label style={lbl}>{label}</label>
-                      <input value={profileDraft[k]||""} onChange={e=>setProfileDraft({...profileDraft,[k]:e.target.value})} style={inp}/>
-                    </div>
-                  ))}
-                  <div style={{marginBottom:"10px"}}>
-                    <label style={lbl}>Foto (URL ou base64)</label>
-                    <input value={profileDraft.photo||""} onChange={e=>setProfileDraft({...profileDraft,photo:e.target.value})} style={inp} placeholder="https://... ou cole base64"/>
-                  </div>
-                  <div style={{display:"flex",gap:"8px",marginTop:"14px"}}>
-                    <button onClick={()=>saveProfile(profileDraft)} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:"#8C1A1A",color:"#FFD0D0",cursor:"pointer",fontWeight:600}}>Salvar</button>
-                    <button onClick={()=>setProfileEdit(false)} style={{padding:"9px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
+        
         {/* ===== BUDGET ===== */}
         {view==="budget" && (
-          <div style={{flex:1}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Budget {new Date().getFullYear()}</div>
-              <button onClick={()=>setBudgetModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>+ Adicionar meta</button>
+          <div style={{flex:1,minWidth:0}}>
+            {/* Toolbar */}
+            <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"14px",flexWrap:"wrap"}}>
+              <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)",flex:1}}>Budget {CUR_YEAR}</div>
+              <div style={{display:"flex",gap:"2px",background:"rgba(128,128,128,0.12)",borderRadius:"8px",padding:"3px"}}>
+                {[["supplier","Por Fornecedor"],["client","Por Cliente"],["overview","Visão Geral"]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setBudgetView(v)} style={{padding:"4px 12px",fontSize:"11px",borderRadius:"6px",border:"none",cursor:"pointer",background:budgetView===v?"#8C1A1A":"transparent",color:budgetView===v?"#fff":"var(--text-secondary)",fontWeight:budgetView===v?700:400,whiteSpace:"nowrap"}}>{l}</button>
+                ))}
+              </div>
+              <button onClick={()=>setBudgetModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>+ Nova meta</button>
             </div>
-            {/* Summary cards */}
+
+            {/* KPI cards globais */}
             {(()=>{
-              const tot   = budgets.reduce((s,b)=>s+b.target,0);
-              const real  = budgets.reduce((s,b)=>s+b.realized,0);
-              const pct   = tot>0?Math.round(real/tot*100):0;
+              const totalMetas = budgets.filter(b=>b.year===CUR_YEAR).reduce((s,b)=>s+totalMeta(b),0);
+              const totalReal  = budgets.filter(b=>b.year===CUR_YEAR).reduce((s,b)=>s+totalRealizado(b),0);
+              const pctGlobal  = totalMetas>0?Math.round(totalReal/totalMetas*100):0;
+              const autoTotal  = budgets.filter(b=>b.year===CUR_YEAR).reduce((s,b)=>s+autoRealizado(b),0);
               return (
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"14px"}}>
-                  {[["Meta total","R$ "+tot.toLocaleString("pt-BR"),"#E6F1FB","#0C447C"],["Realizado","R$ "+real.toLocaleString("pt-BR"),"#EAF3DE","#27500A"],["Atingimento",pct+"%",pct>=80?"#EAF3DE":pct>=50?"#FAEEDA":"#FCEBEB",pct>=80?"#27500A":pct>=50?"#633806":"#791F1F"]].map(([l,v,bg,tc])=>(
-                    <div key={l} style={{background:bg,borderRadius:"8px",padding:"10px 12px"}}>
-                      <div style={{fontSize:"10px",color:tc,opacity:.7,marginBottom:"4px"}}>{l}</div>
-                      <div style={{fontSize:"16px",fontWeight:700,color:tc}}>{v}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"16px"}}>
+                  {[
+                    ["Meta anual","R$ "+(totalMetas/1000).toFixed(0)+"k","var(--bg-card2)","var(--text-secondary)","var(--text-primary)"],
+                    ["Realizado","R$ "+(totalReal/1000).toFixed(0)+"k","rgba(29,158,117,0.1)","#1D9E75","#1D9E75"],
+                    ["Auto pipeline","R$ "+(autoTotal/1000).toFixed(0)+"k","rgba(55,138,221,0.1)","#378ADD","#378ADD"],
+                    ["Atingimento",pctGlobal+"%",pctGlobal>=80?"rgba(29,158,117,0.1)":pctGlobal>=50?"rgba(239,159,39,0.1)":"rgba(226,75,74,0.1)",pctGlobal>=80?"#1D9E75":pctGlobal>=50?"#EF9F27":"#E24B4A",pctGlobal>=80?"#1D9E75":pctGlobal>=50?"#EF9F27":"#E24B4A"],
+                  ].map(([l,v,bg,bc,tc])=>(
+                    <div key={l} style={{background:bg,border:`1px solid ${bc}33`,borderRadius:"8px",padding:"10px 14px"}}>
+                      <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"4px",textTransform:"uppercase",letterSpacing:".06em"}}>{l}</div>
+                      <div style={{fontSize:"20px",fontWeight:700,color:tc}}>{v}</div>
                     </div>
                   ))}
                 </div>
               );
             })()}
-            <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",overflow:"hidden"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
-                <thead><tr style={{background:"var(--bg-card2)"}}>
-                  {["Cliente","Fornecedor","Meta","Realizado","% Ating.","Ano",""].map(h=>(
-                    <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)"}}>{h}</th>
-                  ))}
-                </tr></thead>
-                <tbody>
-                  {budgets.length===0 && <tr><td colSpan={7} style={{padding:"20px",textAlign:"center",color:"var(--text-muted)",fontSize:"12px"}}>Nenhuma meta cadastrada</td></tr>}
-                  {budgets.map(b=>{
-                    const pct=b.target>0?Math.round(b.realized/b.target*100):0;
-                    const pc=pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
-                    return (
-                      <tr key={b.id} style={{borderBottom:"1px solid var(--border2)"}}>
-                        <td style={{padding:"8px 10px",color:"var(--text-primary)",fontWeight:600}}>{b.client}</td>
-                        <td style={{padding:"8px 10px",color:"var(--text-secondary)"}}>{b.supplier||"—"}</td>
-                        <td style={{padding:"8px 10px",color:"var(--text-accent)"}}>R$ {b.target.toLocaleString("pt-BR")}</td>
-                        <td style={{padding:"8px 10px",color:"var(--text-green)"}}>R$ {b.realized.toLocaleString("pt-BR")}</td>
-                        <td style={{padding:"8px 10px"}}><span style={{color:pc,fontWeight:700}}>{pct}%</span></td>
-                        <td style={{padding:"8px 10px",color:"var(--text-secondary)"}}>{b.year}</td>
-                        <td style={{padding:"8px 10px"}}><button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"13px"}}>✕</button></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {budgetModal && (
-              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
-                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"360px",maxWidth:"90vw"}}>
-                  <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Nova meta de budget</div>
-                  {[["client","Cliente *","text"],["supplier","Fornecedor","text"],["target","Meta (R$)","number"],["realized","Realizado (R$)","number"],["year","Ano","number"]].map(([k,lbl,t])=>(
-                    <div key={k} style={{marginBottom:"8px"}}>
-                      <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lbl}</label>
-                      <input type={t} value={budgetForm[k]||""} onChange={e=>setBudgetForm({...budgetForm,[k]:e.target.value})} style={inp}/>
+
+            {/* POR FORNECEDOR */}
+            {budgetView==="supplier" && (
+              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="supplier").length===0 && (
+                  <div style={{textAlign:"center",padding:"40px",color:"var(--text-muted)",fontSize:"13px",background:"var(--bg-card)",borderRadius:"8px",border:"1px solid var(--border)"}}>
+                    Nenhuma meta por fornecedor. Clique em "+ Nova meta" para adicionar.
+                  </div>
+                )}
+                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="supplier").map(b=>{
+                  const meta = totalMeta(b);
+                  const real = totalRealizado(b);
+                  const auto = autoRealizado(b);
+                  const pct  = meta>0?Math.round(real/meta*100):0;
+                  const pct1s= b.target1s>0?Math.round(((b.realized1s||0)+auto*0.5)/b.target1s*100):0;
+                  const pct2s= b.target2s>0?Math.round(((b.realized2s||0)+auto*0.5)/b.target2s*100):0;
+                  const pc   = pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                  return (
+                    <div key={b.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"14px 16px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"10px"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>{b.supplier}</div>
+                          {b.notes&&<div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"1px"}}>{b.notes}</div>}
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontSize:"18px",fontWeight:700,color:pc}}>{pct}%</div>
+                          <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>R$ {(real/1000).toFixed(0)}k / R$ {(meta/1000).toFixed(0)}k</div>
+                        </div>
+                        <button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"14px",padding:"2px"}}>✕</button>
+                      </div>
+                      {/* Barra global */}
+                      <div style={{height:"6px",background:"var(--bg-card2)",borderRadius:"3px",marginBottom:"12px",overflow:"hidden"}}>
+                        <div style={{height:"100%",width:Math.min(pct,100)+"%",background:pc,borderRadius:"3px",transition:"width .4s"}}/>
+                      </div>
+                      {/* Semestres */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                        {[["1S",b.target1s,b.realized1s,"realized1s"],["2S",b.target2s,b.realized2s,"realized2s"]].map(([sem,tgt,real2,key])=>{
+                          const p=tgt>0?Math.min(Math.round(real2/tgt*100),100):0;
+                          const col=p>=80?"#1D9E75":p>=50?"#EF9F27":"#E24B4A";
+                          return (
+                            <div key={sem} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                                <span style={{fontSize:"11px",fontWeight:600,color:"var(--text-secondary)"}}>{sem}/{CUR_YEAR}</span>
+                                <span style={{fontSize:"11px",fontWeight:700,color:col}}>{p}%</span>
+                              </div>
+                              <div style={{height:"4px",background:"var(--bg-card)",borderRadius:"2px",marginBottom:"8px",overflow:"hidden"}}>
+                                <div style={{height:"100%",width:p+"%",background:col,borderRadius:"2px",transition:"width .4s"}}/>
+                              </div>
+                              <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"6px"}}>
+                                R$ {(real2||0).toLocaleString("pt-BR")} <span style={{color:"var(--text-muted)"}}>/ R$ {(tgt||0).toLocaleString("pt-BR")}</span>
+                              </div>
+                              <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                                <span style={{fontSize:"9px",color:"var(--text-muted)"}}>Ajuste manual:</span>
+                                <input type="number" value={real2||""} onChange={e=>updateBudget({...b,[key]:Number(e.target.value)||0})}
+                                  style={{...inp,width:"90px",fontSize:"10px",padding:"3px 6px"}} placeholder="0"/>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Realizado automático do pipeline */}
+                      {auto>0&&<div style={{marginTop:"8px",fontSize:"10px",color:"var(--text-blue)",background:"rgba(24,95,165,0.08)",borderRadius:"5px",padding:"5px 8px"}}>
+                        🔄 Pipeline (fechadas): R$ {auto.toLocaleString("pt-BR")}
+                      </div>}
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* POR CLIENTE */}
+            {budgetView==="client" && (
+              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="client").length===0 && (
+                  <div style={{textAlign:"center",padding:"40px",color:"var(--text-muted)",fontSize:"13px",background:"var(--bg-card)",borderRadius:"8px",border:"1px solid var(--border)"}}>
+                    Nenhuma meta por cliente. Clique em "+ Nova meta" para adicionar.
+                  </div>
+                )}
+                {budgets.filter(b=>b.year===CUR_YEAR&&b.type==="client").map(b=>{
+                  const meta=totalMeta(b), real=totalRealizado(b), auto=autoRealizado(b);
+                  const pct=meta>0?Math.round(real/meta*100):0;
+                  const pc=pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                  return (
+                    <div key={b.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"14px 16px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"10px"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>{b.client}</div>
+                          {b.notes&&<div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"1px"}}>{b.notes}</div>}
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontSize:"18px",fontWeight:700,color:pc}}>{pct}%</div>
+                          <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>R$ {(real/1000).toFixed(0)}k / R$ {(meta/1000).toFixed(0)}k</div>
+                        </div>
+                        <button onClick={()=>delBudget(b.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"14px",padding:"2px"}}>✕</button>
+                      </div>
+                      <div style={{height:"6px",background:"var(--bg-card2)",borderRadius:"3px",marginBottom:"12px",overflow:"hidden"}}>
+                        <div style={{height:"100%",width:Math.min(pct,100)+"%",background:pc,borderRadius:"3px",transition:"width .4s"}}/>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                        {[["1S",b.target1s,b.realized1s,"realized1s"],["2S",b.target2s,b.realized2s,"realized2s"]].map(([sem,tgt,real2,key])=>{
+                          const p=tgt>0?Math.min(Math.round(real2/tgt*100),100):0;
+                          const col=p>=80?"#1D9E75":p>=50?"#EF9F27":"#E24B4A";
+                          return (
+                            <div key={sem} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                                <span style={{fontSize:"11px",fontWeight:600,color:"var(--text-secondary)"}}>{sem}/{CUR_YEAR}</span>
+                                <span style={{fontSize:"11px",fontWeight:700,color:col}}>{p}%</span>
+                              </div>
+                              <div style={{height:"4px",background:"var(--bg-card)",borderRadius:"2px",marginBottom:"8px",overflow:"hidden"}}>
+                                <div style={{height:"100%",width:p+"%",background:col,borderRadius:"2px",transition:"width .4s"}}/>
+                              </div>
+                              <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"6px"}}>
+                                R$ {(real2||0).toLocaleString("pt-BR")} <span style={{color:"var(--text-muted)"}}>/ R$ {(tgt||0).toLocaleString("pt-BR")}</span>
+                              </div>
+                              <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                                <span style={{fontSize:"9px",color:"var(--text-muted)"}}>Ajuste manual:</span>
+                                <input type="number" value={real2||""} onChange={e=>updateBudget({...b,[key]:Number(e.target.value)||0})}
+                                  style={{...inp,width:"90px",fontSize:"10px",padding:"3px 6px"}} placeholder="0"/>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {auto>0&&<div style={{marginTop:"8px",fontSize:"10px",color:"var(--text-blue)",background:"rgba(24,95,165,0.08)",borderRadius:"5px",padding:"5px 8px"}}>
+                        🔄 Pipeline (fechadas): R$ {auto.toLocaleString("pt-BR")}
+                      </div>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* VISÃO GERAL */}
+            {budgetView==="overview" && (
+              <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+                {/* Tabela consolidada */}
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",overflow:"hidden"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                    <thead><tr style={{background:"var(--bg-card2)"}}>
+                      {["Tipo","Nome","Meta Anual","1S Meta","1S Real","2S Meta","2S Real","Pipeline","Total Real","Ating."].map(h=>(
+                        <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)",whiteSpace:"nowrap"}}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {budgets.filter(b=>b.year===CUR_YEAR).length===0&&(
+                        <tr><td colSpan={10} style={{padding:"20px",textAlign:"center",color:"var(--text-muted)",fontSize:"12px"}}>Nenhuma meta cadastrada para {CUR_YEAR}</td></tr>
+                      )}
+                      {budgets.filter(b=>b.year===CUR_YEAR).map(b=>{
+                        const meta=totalMeta(b), real=totalRealizado(b), auto=autoRealizado(b);
+                        const pct=meta>0?Math.round(real/meta*100):0;
+                        const pc=pct>=80?"#1D9E75":pct>=50?"#EF9F27":"#E24B4A";
+                        return (
+                          <tr key={b.id} style={{borderBottom:"1px solid var(--border2)"}}>
+                            <td style={{padding:"7px 10px"}}><span style={{fontSize:"9px",padding:"2px 6px",borderRadius:"4px",background:b.type==="supplier"?"rgba(24,95,165,0.15)":"rgba(140,26,26,0.15)",color:b.type==="supplier"?"#185FA5":"var(--text-accent)",fontWeight:600}}>{b.type==="supplier"?"FORN":"CLI"}</span></td>
+                            <td style={{padding:"7px 10px",fontWeight:600,color:"var(--text-primary)"}}>{b.type==="supplier"?b.supplier:b.client}</td>
+                            <td style={{padding:"7px 10px",color:"var(--text-secondary)"}}>R$ {(meta/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px",color:"var(--text-secondary)"}}>R$ {((b.target1s||0)/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px",color:"var(--text-green)"}}>R$ {((b.realized1s||0)/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px",color:"var(--text-secondary)"}}>R$ {((b.target2s||0)/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px",color:"var(--text-green)"}}>R$ {((b.realized2s||0)/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px",color:"var(--text-blue)"}}>R$ {(auto/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px",fontWeight:600,color:pc}}>R$ {(real/1000).toFixed(0)}k</td>
+                            <td style={{padding:"7px 10px"}}><span style={{fontWeight:700,color:pc}}>{pct}%</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* MODAL NOVA META */}
+            {budgetModal && (
+              <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60}}>
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"12px",padding:"20px",width:"400px",maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+                    <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>Nova meta de budget</div>
+                    <button onClick={()=>setBudgetModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+                  </div>
+                  {/* Tipo */}
+                  <div style={{marginBottom:"12px"}}>
+                    <label style={lbl}>Tipo de meta</label>
+                    <div style={{display:"flex",gap:"6px"}}>
+                      {[["supplier","Por Fornecedor"],["client","Por Cliente"]].map(([v,l])=>(
+                        <button key={v} onClick={()=>setBudgetForm({...budgetForm,type:v})}
+                          style={{flex:1,padding:"8px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${budgetForm.type===v?"#8C1A1A":"var(--border)"}`,background:budgetForm.type===v?"rgba(140,26,26,0.15)":"transparent",color:budgetForm.type===v?"var(--text-accent)":"var(--text-secondary)",cursor:"pointer",fontWeight:budgetForm.type===v?600:400}}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {budgetForm.type==="supplier"
+                    ? <div style={{marginBottom:"10px"}}><label style={lbl}>Fornecedor *</label><input value={budgetForm.supplier} onChange={e=>setBudgetForm({...budgetForm,supplier:e.target.value})} style={inp} placeholder="ex: Norbar"/></div>
+                    : <div style={{marginBottom:"10px"}}><label style={lbl}>Cliente *</label><input value={budgetForm.client} onChange={e=>setBudgetForm({...budgetForm,client:e.target.value})} style={inp} placeholder="ex: Caterpillar"/></div>
+                  }
                   <div style={{marginBottom:"10px"}}>
-                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas</label>
-                    <textarea value={budgetForm.notes||""} onChange={e=>setBudgetForm({...budgetForm,notes:e.target.value})} style={{...inp,height:"52px"}}/>
+                    <label style={lbl}>Meta anual (R$) — ou preencha por semestre</label>
+                    <input type="number" value={budgetForm.targetAnual||""} onChange={e=>setBudgetForm({...budgetForm,targetAnual:e.target.value})} style={inp} placeholder="0"/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+                    {[["target1s",`Meta 1S/${CUR_YEAR}`],["target2s",`Meta 2S/${CUR_YEAR}`],["realized1s",`Realizado 1S (manual)`],["realized2s",`Realizado 2S (manual)`]].map(([k,l])=>(
+                      <div key={k}>
+                        <label style={lbl}>{l}</label>
+                        <input type="number" value={budgetForm[k]||""} onChange={e=>setBudgetForm({...budgetForm,[k]:e.target.value})} style={inp} placeholder="0"/>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{marginBottom:"14px"}}>
+                    <label style={lbl}>Notas</label>
+                    <textarea value={budgetForm.notes} onChange={e=>setBudgetForm({...budgetForm,notes:e.target.value})} style={{...inp,height:"50px"}}/>
                   </div>
                   <div style={{display:"flex",gap:"8px"}}>
-                    <button onClick={addBudget} disabled={!budgetForm.client} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:budgetForm.client?"#8C1A1A":"#4A2A2A",color:budgetForm.client?"#FFD0D0":"#7A5050",cursor:budgetForm.client?"pointer":"default",fontWeight:600}}>Salvar</button>
-                    <button onClick={()=>setBudgetModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                    <button onClick={addBudget} disabled={!budgetForm.supplier&&!budgetForm.client}
+                      style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:(budgetForm.supplier||budgetForm.client)?"#8C1A1A":"#4A2A2A",color:(budgetForm.supplier||budgetForm.client)?"#FFD0D0":"#7A5050",cursor:(budgetForm.supplier||budgetForm.client)?"pointer":"default",fontWeight:600}}>
+                      Salvar meta
+                    </button>
+                    <button onClick={()=>setBudgetModal(false)} style={{padding:"10px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
                   </div>
                 </div>
               </div>
             )}
           </div>
         )}
-
         {/* ===== PÓS VENDA ===== */}
         {view==="posvendas" && (
           <div style={{flex:1}}>
@@ -1287,84 +1410,155 @@ function App() {
 
         {/* PAINEL DETALHE */}
         {sel && (
-          <div style={{width:"272px",flexShrink:0,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px",position:"sticky",top:"60px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
-              <div style={{flex:1,paddingRight:"8px"}}>
-                <div style={{fontSize:"13px",fontWeight:600,marginBottom:"2px",lineHeight:1.3,color:"var(--text-primary)"}}>{sel.title}</div>
-                <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>{sel.company} · {sel.contact}</div>
-              </div>
-              <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px",lineHeight:1,padding:0}}>✕</button>
-            </div>
-            <div style={{display:"flex",gap:"5px",flexWrap:"wrap",marginBottom:"10px"}}>
-              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.25)",color:"var(--text-accent)",fontWeight:600}}>R$ {(sel.value||0).toLocaleString("pt-BR")}</span>
-              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:PRI_BG[sel.priority],color:PRI_TXT[sel.priority],fontWeight:600}}>{sel.priority}</span>
-              <span style={{fontSize:"11px",padding:"2px 8px",borderRadius:"10px",background:(STAGES.find(s=>s.id===sel.stage)?.color||"#888")+"22",color:STAGES.find(s=>s.id===sel.stage)?.color,fontWeight:600}}>{STAGES.find(s=>s.id===sel.stage)?.label}</span>
-            </div>
-            <div style={{display:"flex",gap:"5px",marginBottom:"12px"}}>
-              <button onClick={()=>move(sel.id,-1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",color:"var(--text-secondary)"}}>← Recuar</button>
-              <button onClick={()=>move(sel.id,1)} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.25)",cursor:"pointer",color:"var(--text-accent)",fontWeight:600}}>Avançar →</button>
-            </div>
-            <div style={{marginBottom:"8px"}}>
-              <label style={lbl}>Tipo negociação (NEG.)</label>
-              <div style={{display:"flex",gap:"4px"}}>
-                {[["D","D","#185FA5"],["R","R","#854F0B"],["S","S","#0F6E56"]].map(([v,l,c])=>(
-                  <button key={v} onClick={()=>updateOpp({...sel,negType:v})} style={{flex:1,padding:"4px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${(sel.negType||"D")===v?c:"var(--border)"}`,background:(sel.negType||"D")===v?c+"22":"transparent",color:(sel.negType||"D")===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:(sel.negType||"D")===v?700:400}}>{l}</button>
-                ))}
-              </div>
-            </div>
-            <div style={{marginBottom:"8px"}}>
-              <label style={lbl}>Fornecedor</label>
-              <input value={sel.supplier||""} onChange={e=>updateOpp({...sel,supplier:e.target.value})} style={inp}/>
-            </div>
-            <div style={{marginBottom:"8px"}}>
-              <label style={lbl}>Cor forecast</label>
-              <div style={{display:"flex",gap:"4px"}}>
-                {[["none","—","#888"],["yellow","🟡","#EF9F27"],["red","🔴","#E24B4A"],["gray","⚫","#888780"]].map(([v,l,c])=>(
-                  <button key={v} onClick={()=>updateOpp({...sel,forecastColor:v})} style={{flex:1,padding:"4px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${(sel.forecastColor||"none")===v?c:"var(--border)"}`,background:(sel.forecastColor||"none")===v?c+"33":"transparent",color:(sel.forecastColor||"none")===v?c:"var(--text-secondary)",cursor:"pointer"}}>{l}</button>
-                ))}
-              </div>
-            </div>
-            {[
-              {label:"Próxima ação",     key:"nextAction", type:"textarea"},
-              {label:"Data follow-up",   key:"nextDate",   type:"date"},
-              {label:"Valor R$",         key:"value",      type:"number"},
-              {label:"Notas",            key:"notes",      type:"textarea"},
-            ].map(f=>(
-              <div key={f.key} style={{marginBottom:"8px"}}>
-                <label style={lbl}>{f.label}</label>
-                {f.type==="textarea"
-                  ? <textarea value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:e.target.value})} style={{...inp,height:f.key==="notes"?"72px":"46px"}}/>
-                  : <input type={f.type} value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:f.type==="number"?Number(e.target.value):e.target.value})} style={inp}/>
-                }
-              </div>
-            ))}
-            <div style={{marginBottom:"10px"}}>
-              <label style={lbl}>Prioridade</label>
-              <div style={{display:"flex",gap:"4px"}}>
-                {["alta","media","baixa"].map(p=>(
-                  <button key={p} onClick={()=>updateOpp({...sel,priority:p})} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${sel.priority===p?PRI_TXT[p]:"#ddd"}`,background:sel.priority===p?"rgba(140,26,26,0.25)":"transparent",color:sel.priority===p?"#FFAAAA":"#7A7070",cursor:"pointer",fontWeight:sel.priority===p?600:400,textTransform:"capitalize"}}>{p}</button>
-                ))}
-              </div>
-            </div>
-            {/* Histórico de visitas */}
-            <div style={{marginBottom:"10px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
-                <label style={lbl}>Histórico de visitas ({(sel.visitHistory||[]).length})</label>
-                <button onClick={()=>openVisita(sel)} style={{fontSize:"10px",padding:"2px 8px",borderRadius:"5px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-blue)",cursor:"pointer",fontWeight:600}}>+ Visita</button>
-              </div>
-              {(sel.visitHistory||[]).length===0&&<div style={{fontSize:"10px",color:"var(--text-muted)",fontStyle:"italic"}}>Nenhuma visita registrada</div>}
-              {[...(sel.visitHistory||[])].reverse().slice(0,3).map((v,i)=>(
-                <div key={v.id||i} style={{background:"var(--bg-card2)",borderRadius:"5px",padding:"7px 8px",marginBottom:"4px",borderLeft:"2px solid var(--text-blue)"}}>
-                  <div style={{fontSize:"10px",color:"var(--text-blue)",marginBottom:"2px",fontWeight:600}}>{v.date||v.createdAt}</div>
-                  <div style={{fontSize:"10px",color:"var(--text-primary)",lineHeight:1.4,marginBottom:"2px"}}>{v.summary?.slice(0,100)}{v.summary?.length>100?"…":""}</div>
-                  {v.nextStep&&<div style={{fontSize:"10px",color:"var(--text-accent)",fontWeight:600}}>→ {v.nextStep?.slice(0,60)}</div>}
+          <div style={{width:"300px",flexShrink:0,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",position:"sticky",top:"60px",display:"flex",flexDirection:"column",maxHeight:"calc(100vh - 130px)"}}>
+            {/* Header fixo */}
+            <div style={{padding:"12px 14px 0",flexShrink:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                <div style={{flex:1,paddingRight:"8px"}}>
+                  <div style={{fontSize:"12px",fontWeight:600,marginBottom:"2px",lineHeight:1.3,color:"var(--text-primary)"}}>{sel.title}</div>
+                  <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>{sel.company} · {sel.supplier}</div>
                 </div>
-              ))}
-              {(sel.visitHistory||[]).length>3&&<div style={{fontSize:"10px",color:"var(--text-muted)",textAlign:"right"}}>+{(sel.visitHistory||[]).length-3} mais</div>}
+                <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px",lineHeight:1,padding:0,flexShrink:0}}>✕</button>
+              </div>
+              <div style={{display:"flex",gap:"4px",flexWrap:"wrap",marginBottom:"8px"}}>
+                <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",fontWeight:600}}>R$ {(sel.value||0).toLocaleString("pt-BR")}</span>
+                <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:PRI_BG[sel.priority],color:PRI_TXT[sel.priority],fontWeight:600}}>{sel.priority}</span>
+                <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:(STAGES.find(s=>s.id===sel.stage)?.color||"#888")+"22",color:STAGES.find(s=>s.id===sel.stage)?.color,fontWeight:600}}>{STAGES.find(s=>s.id===sel.stage)?.label}</span>
+              </div>
+              <div style={{display:"flex",gap:"4px",marginBottom:"10px"}}>
+                <button onClick={()=>move(sel.id,-1)} style={{flex:1,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",color:"var(--text-secondary)"}}>← Recuar</button>
+                <button onClick={()=>openVisita(sel)} style={{flex:2,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid #185FA5",background:"rgba(24,95,165,0.12)",cursor:"pointer",color:"#185FA5",fontWeight:700}}>📝 + Registrar visita</button>
+                <button onClick={()=>move(sel.id,1)} style={{flex:1,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",cursor:"pointer",color:"var(--text-accent)",fontWeight:600}}>Avançar →</button>
+              </div>
+              {/* Abas internas */}
+              <div style={{display:"flex",gap:"2px",background:"var(--bg-card2)",borderRadius:"7px",padding:"3px",marginBottom:"10px"}}>
+                {[["dados","Dados"],["historico",`Histórico (${(sel.visitHistory||[]).length})`]].map(([t,l])=>(
+                  <button key={t} onClick={()=>setDetailTab(t)} style={{flex:1,padding:"4px 6px",fontSize:"10px",borderRadius:"5px",border:"none",cursor:"pointer",background:detailTab===t?"var(--bg-card)":"transparent",color:detailTab===t?"var(--text-primary)":"var(--text-secondary)",fontWeight:detailTab===t?600:400,transition:"all .15s"}}>{l}</button>
+                ))}
+              </div>
             </div>
-            <div style={{display:"flex",gap:"5px"}}>
-              <button onClick={()=>openAI(`Analise a oportunidade "${sel.title}" da ${sel.company} na etapa ${STAGES.find(s=>s.id===sel.stage)?.label}. Próximos passos com 3S+M?`)} style={{flex:1,padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid #6B3A3A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>Analisar com IA</button>
-              <button onClick={()=>delOpp(sel.id)} style={{padding:"7px 10px",fontSize:"11px",borderRadius:"6px",border:"1px solid #5A2A2A",background:"rgba(80,20,20,0.3)",color:"#FF9090",cursor:"pointer"}}>Excluir</button>
+            {/* Corpo scrollável */}
+            <div style={{overflowY:"auto",flex:1,padding:"0 14px 14px"}}>
+              {/* ABA DADOS */}
+              {detailTab==="dados" && (
+                <div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Tipo negociação (NEG.)</label>
+                    <div style={{display:"flex",gap:"4px"}}>
+                      {[["D","D","#185FA5"],["R","R","#854F0B"],["S","S","#0F6E56"]].map(([v,l,c])=>(
+                        <button key={v} onClick={()=>updateOpp({...sel,negType:v})} style={{flex:1,padding:"4px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${(sel.negType||"D")===v?c:"var(--border)"}`,background:(sel.negType||"D")===v?c+"22":"transparent",color:(sel.negType||"D")===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:(sel.negType||"D")===v?700:400}}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Fornecedor</label>
+                    <input value={sel.supplier||""} onChange={e=>updateOpp({...sel,supplier:e.target.value})} style={inp}/>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Cor forecast</label>
+                    <div style={{display:"flex",gap:"4px"}}>
+                      {[["none","—","#888"],["yellow","🟡","#EF9F27"],["red","🔴","#E24B4A"],["gray","⚫","#888780"]].map(([v,l,c])=>(
+                        <button key={v} onClick={()=>updateOpp({...sel,forecastColor:v})} style={{flex:1,padding:"4px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${(sel.forecastColor||"none")===v?c:"var(--border)"}`,background:(sel.forecastColor||"none")===v?c+"33":"transparent",color:(sel.forecastColor||"none")===v?c:"var(--text-secondary)",cursor:"pointer"}}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {[
+                    {label:"Próxima ação", key:"nextAction", type:"textarea"},
+                    {label:"Data follow-up", key:"nextDate", type:"date"},
+                    {label:"Valor R$", key:"value", type:"number"},
+                    {label:"Notas", key:"notes", type:"textarea"},
+                  ].map(f=>(
+                    <div key={f.key} style={{marginBottom:"8px"}}>
+                      <label style={lbl}>{f.label}</label>
+                      {f.type==="textarea"
+                        ? <textarea value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:e.target.value})} style={{...inp,height:f.key==="notes"?"72px":"46px"}}/>
+                        : <input type={f.type} value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:f.type==="number"?Number(e.target.value):e.target.value})} style={inp}/>
+                      }
+                    </div>
+                  ))}
+                  <div style={{marginBottom:"12px"}}>
+                    <label style={lbl}>Prioridade</label>
+                    <div style={{display:"flex",gap:"4px"}}>
+                      {["alta","media","baixa"].map(p=>(
+                        <button key={p} onClick={()=>updateOpp({...sel,priority:p})} style={{flex:1,padding:"5px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${sel.priority===p?PRI_TXT[p]:"var(--border)"}`,background:sel.priority===p?"rgba(140,26,26,0.25)":"transparent",color:sel.priority===p?"var(--text-accent)":"var(--text-secondary)",cursor:"pointer",fontWeight:sel.priority===p?600:400,textTransform:"capitalize"}}>{p}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:"5px"}}>
+                    <button onClick={()=>openAI(`Analise a oportunidade "${sel.title}" da ${sel.company} na etapa ${STAGES.find(s=>s.id===sel.stage)?.label}. Próximos passos com 3S+M?`)} style={{flex:1,padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid #6B3A3A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>Analisar com IA</button>
+                    <button onClick={()=>delOpp(sel.id)} style={{padding:"7px 10px",fontSize:"11px",borderRadius:"6px",border:"1px solid #5A2A2A",background:"rgba(80,20,20,0.3)",color:"#FF9090",cursor:"pointer"}}>Excluir</button>
+                  </div>
+                </div>
+              )}
+
+              {/* ABA HISTÓRICO */}
+              {detailTab==="historico" && (
+                <div>
+                  {/* Botão principal */}
+                  <button onClick={()=>openVisita(sel)}
+                    style={{width:"100%",padding:"10px",fontSize:"12px",borderRadius:"8px",border:"2px solid #185FA5",background:"rgba(24,95,165,0.1)",color:"#185FA5",cursor:"pointer",fontWeight:700,marginBottom:"12px",letterSpacing:".03em"}}>
+                    📝 Registrar nova visita / reunião
+                  </button>
+                  {/* Filtro por período */}
+                  <div style={{display:"flex",gap:"6px",marginBottom:"10px",alignItems:"center"}}>
+                    <input type="date" value={histPeriodFrom} onChange={e=>setHistPeriodFrom(e.target.value)}
+                      style={{...inp,fontSize:"10px",padding:"4px 6px",flex:1}} title="Data inicial"/>
+                    <span style={{fontSize:"10px",color:"var(--text-muted)"}}>até</span>
+                    <input type="date" value={histPeriodTo} onChange={e=>setHistPeriodTo(e.target.value)}
+                      style={{...inp,fontSize:"10px",padding:"4px 6px",flex:1}} title="Data final"/>
+                    {(histPeriodFrom||histPeriodTo)&&<button onClick={()=>{setHistPeriodFrom("");setHistPeriodTo("");}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"12px",padding:"0 2px"}}>✕</button>}
+                  </div>
+                  {/* Lista de visitas */}
+                  {(()=>{
+                    let visits = [...(sel.visitHistory||[])].sort((a,b)=>(b.date||b.createdAt||"").localeCompare(a.date||a.createdAt||""));
+                    if(histPeriodFrom) visits = visits.filter(v=>(v.date||v.createdAt||"")>=histPeriodFrom);
+                    if(histPeriodTo)   visits = visits.filter(v=>(v.date||v.createdAt||"")<=histPeriodTo);
+                    if(visits.length===0) return (
+                      <div style={{textAlign:"center",padding:"24px 0",color:"var(--text-muted)",fontSize:"12px"}}>
+                        {(sel.visitHistory||[]).length===0?"Nenhuma visita registrada ainda.":"Nenhuma visita no período selecionado."}
+                      </div>
+                    );
+                    return visits.map((v,i)=>(
+                      <div key={v.id||i} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px",marginBottom:"8px",borderLeft:"3px solid #185FA5"}}>
+                        {/* Cabeçalho da visita */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                          <span style={{fontSize:"11px",fontWeight:700,color:"#185FA5"}}>{v.date||v.createdAt}</span>
+                          {v.who&&<span style={{fontSize:"10px",color:"var(--text-secondary)",background:"var(--bg-card)",borderRadius:"5px",padding:"1px 6px"}}>{v.who.slice(0,25)}</span>}
+                        </div>
+                        {/* Resumo */}
+                        {v.summary&&(
+                          <div style={{fontSize:"11px",color:"var(--text-primary)",lineHeight:1.5,marginBottom:"6px",whiteSpace:"pre-line"}}>{v.summary}</div>
+                        )}
+                        {/* 5W2H compacto */}
+                        {(v.what||v.why||v.where||v.how||v.howMuch)&&(
+                          <div style={{background:"var(--bg-card)",borderRadius:"5px",padding:"6px 8px",marginBottom:"6px"}}>
+                            <div style={{fontSize:"9px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"5px"}}>5W2H</div>
+                            {[["O quê",v.what],["Por quê",v.why],["Quem",v.who],["Onde",v.where],["Como",v.how],["Quanto",v.howMuch]].map(([k,val])=>val?(
+                              <div key={k} style={{display:"flex",gap:"6px",fontSize:"10px",marginBottom:"3px"}}>
+                                <span style={{color:"var(--text-secondary)",width:"40px",flexShrink:0,fontWeight:600}}>{k}</span>
+                                <span style={{color:"var(--text-primary)",lineHeight:1.4}}>{val}</span>
+                              </div>
+                            ):null)}
+                          </div>
+                        )}
+                        {/* Próximo passo */}
+                        {v.nextStep&&(
+                          <div style={{background:"rgba(140,26,26,0.08)",borderRadius:"5px",padding:"5px 8px",borderLeft:"2px solid #8C1A1A"}}>
+                            <div style={{fontSize:"9px",fontWeight:700,color:"var(--text-accent)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"2px"}}>Próximo passo</div>
+                            <div style={{fontSize:"10px",color:"var(--text-primary)",lineHeight:1.4}}>{v.nextStep}</div>
+                            {v.when&&<div style={{fontSize:"9px",color:"var(--text-secondary)",marginTop:"2px"}}>Quando: {v.when}</div>}
+                          </div>
+                        )}
+                        {/* Botão excluir visita */}
+                        <button onClick={()=>{
+                          const newHist = (sel.visitHistory||[]).filter(h=>h.id!==v.id);
+                          updateOpp({...sel,visitHistory:newHist});
+                        }} style={{marginTop:"6px",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"10px",padding:0}}>excluir registro</button>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1482,6 +1676,133 @@ function App() {
               style={{width:"100%",padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:form.title&&form.company?"#8C1A1A":"#4A2A2A",color:form.title&&form.company?"#FFD0D0":"#7A5050",cursor:form.title&&form.company?"pointer":"default",fontWeight:600}}>
               Criar oportunidade
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PERFIL */}
+      {showProfile && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:70,padding:"16px"}}>
+          <div style={{background:"var(--bg-card)",borderRadius:"12px",border:"1px solid var(--border)",padding:"20px",width:"420px",maxWidth:"100%",maxHeight:"90vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+              <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)"}}>Meu Perfil</div>
+              <button onClick={()=>setShowProfile(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+            </div>
+            {!profileEdit ? (
+              <div>
+                <div style={{display:"flex",gap:"16px",alignItems:"center",marginBottom:"18px"}}>
+                  <div style={{width:"72px",height:"72px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",fontWeight:700,color:"#FFD0D0",flexShrink:0,overflow:"hidden"}}>
+                    {profile.photo ? <img src={profile.photo} style={{width:"72px",height:"72px",objectFit:"cover"}} alt="foto"/> : (profile.userName||"U").split(" ").map(w=>w[0]).slice(0,2).join("")}
+                  </div>
+                  <div>
+                    <div style={{fontSize:"17px",fontWeight:700,color:"var(--text-primary)"}}>{profile.userName||"—"}</div>
+                    <div style={{fontSize:"12px",color:"var(--text-accent)"}}>{profile.role||"—"}</div>
+                    <div style={{fontSize:"12px",color:"var(--text-secondary)"}}>{profile.companyName||"—"}</div>
+                  </div>
+                </div>
+                {[["E-mail",profile.email],["Telefone",profile.phone],["LinkedIn",profile.linkedin],["Região",profile.region]].map(([k,v])=>(
+                  <div key={k} style={{display:"flex",gap:"12px",padding:"7px 0",borderBottom:"1px solid var(--border2)"}}>
+                    <span style={{fontSize:"12px",color:"var(--text-secondary)",width:"80px",flexShrink:0}}>{k}</span>
+                    <span style={{fontSize:"12px",color:"var(--text-primary)"}}>{v||"—"}</span>
+                  </div>
+                ))}
+                <button onClick={()=>{setProfileDraft({...profile});setProfileEdit(true);}}
+                  style={{width:"100%",marginTop:"16px",padding:"9px",fontSize:"13px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.15)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>Editar perfil</button>
+              </div>
+            ) : (
+              <div>
+                {[["companyName","Empresa"],["userName","Nome"],["role","Cargo"],["email","E-mail"],["phone","Telefone"],["linkedin","LinkedIn"],["region","Região"]].map(([k,label])=>(
+                  <div key={k} style={{marginBottom:"10px"}}>
+                    <label style={lbl}>{label}</label>
+                    <input value={profileDraft[k]||""} onChange={e=>setProfileDraft({...profileDraft,[k]:e.target.value})} style={inp}/>
+                  </div>
+                ))}
+                <div style={{marginBottom:"10px"}}>
+                  <label style={lbl}>Foto (URL ou base64)</label>
+                  <input value={profileDraft.photo||""} onChange={e=>setProfileDraft({...profileDraft,photo:e.target.value})} style={inp} placeholder="https://..."/>
+                </div>
+                <div style={{display:"flex",gap:"8px",marginTop:"14px"}}>
+                  <button onClick={()=>{saveProfile(profileDraft);setProfileEdit(false);}} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:"#8C1A1A",color:"#FFD0D0",cursor:"pointer",fontWeight:600}}>Salvar</button>
+                  <button onClick={()=>setProfileEdit(false)} style={{padding:"9px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIGURAÇÕES */}
+      {showSettings && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:70,padding:"16px"}}>
+          <div style={{background:"var(--bg-card)",borderRadius:"12px",border:"1px solid var(--border)",padding:"20px",width:"520px",maxWidth:"100%",maxHeight:"90vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
+              <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)"}}>⚙ Configurações</div>
+              <button onClick={()=>setShowSettings(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+            </div>
+
+            {/* Tema */}
+            <div style={{marginBottom:"20px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Aparência</div>
+              <div style={{display:"flex",gap:"8px"}}>
+                {[["light","☀ Claro","#FFF8F0","#8C1A1A"],["dark","☾ Escuro","#1a1a1a","#FFAAAA"],["system","⊙ Sistema","var(--bg-card2)","var(--text-secondary)"]].map(([t,l,bg,tc])=>(
+                  <button key={t} onClick={()=>setThemePref(t)}
+                    style={{flex:1,padding:"10px 8px",fontSize:"12px",borderRadius:"8px",border:`2px solid ${themePref===t?"#8C1A1A":"var(--border)"}`,background:themePref===t?"rgba(140,26,26,0.12)":"var(--bg-card2)",color:themePref===t?"var(--text-accent)":"var(--text-secondary)",cursor:"pointer",fontWeight:themePref===t?700:400,transition:"all .15s"}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Colunas do Forecast */}
+            <div style={{marginBottom:"20px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Colunas do Forecast</div>
+              <div style={{background:"var(--bg-card2)",borderRadius:"8px",overflow:"hidden"}}>
+                {(settings.forecastCols||[]).map((col,i)=>(
+                  <div key={col.key} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 12px",borderBottom:"1px solid var(--border2)"}}>
+                    <input type="checkbox" checked={col.visible} onChange={e=>{
+                      const cols = settings.forecastCols.map((c,j)=>j===i?{...c,visible:e.target.checked}:c);
+                      saveSettings({...settings,forecastCols:cols});
+                    }} style={{cursor:"pointer"}}/>
+                    <div style={{flex:1}}>
+                      <input value={col.label} onChange={e=>{
+                        const cols = settings.forecastCols.map((c,j)=>j===i?{...c,label:e.target.value}:c);
+                        saveSettings({...settings,forecastCols:cols});
+                      }} style={{...inp,fontSize:"12px",padding:"4px 8px"}} placeholder="Nome da coluna"/>
+                    </div>
+                    <input value={col.width} onChange={e=>{
+                      const cols = settings.forecastCols.map((c,j)=>j===i?{...c,width:e.target.value}:c);
+                      saveSettings({...settings,forecastCols:cols});
+                    }} style={{...inp,width:"60px",fontSize:"11px",padding:"4px 6px"}} placeholder="Largura"/>
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>saveSettings({...settings,forecastCols:defaultSettings.forecastCols})}
+                style={{marginTop:"8px",fontSize:"11px",padding:"4px 12px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Restaurar padrão</button>
+            </div>
+
+            {/* Campos da oportunidade */}
+            <div style={{marginBottom:"20px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Campos da oportunidade</div>
+              <div style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 14px",fontSize:"12px",color:"var(--text-secondary)",lineHeight:1.8}}>
+                Os campos padrão são: Título, Empresa, Fornecedor, Contato, Valor, Etapa, Prioridade, Tipo (D/R/S), Cor forecast, Próxima ação, Data follow-up, Notas.
+                <br/><br/>
+                <span style={{color:"var(--text-accent)"}}>Personalização avançada de campos estará disponível em breve.</span>
+              </div>
+            </div>
+
+            {/* Dados */}
+            <div style={{marginBottom:"8px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Dados</div>
+              <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                <button onClick={exportData} style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>↓ Exportar backup</button>
+                <label style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>
+                  ↑ Importar backup<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/>
+                </label>
+                <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);setShowSettings(false);}}
+                  style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>🔑 API Key</button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
