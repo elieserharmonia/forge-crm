@@ -309,6 +309,104 @@ function App() {
     e.target.value="";
   }
 
+  // IMPORTAR ORÇAMENTO VIA XLSX
+  async function importOrcamentoXLSX(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const XLSX = window.XLSX;
+    if (!XLSX) { alert("Aguarde o carregamento do leitor de planilhas."); return; }
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true});
+
+    // Estrutura da planilha Sinuelo:
+    // Linha 14 (idx 13): cabeçalhos de grupo
+    // Linha 15 (idx 14): cabeçalhos de coluna
+    // Linhas 17+ (idx 16+): itens (col A=item, E=qtd, F=desc, G=codigo, H=sigma, J=entrega, L=preco_unit, T=val_liq_unit)
+    // Linha TOTAL: L="Valor total com ICMS", M=valor
+
+    // Detectar itens (coluna A = número sequencial)
+    const items = [];
+    let totalComICMS = 0;
+    let totalComIPI  = 0;
+    let foundTotal   = false;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row.length) continue;
+
+      // Linha de item: col A é número 1-99
+      const itemNum = row[0];
+      if (typeof itemNum === 'number' && itemNum >= 1 && itemNum <= 99) {
+        const qtd         = Number(row[4])  || 1;
+        const desc        = String(row[5]  || '').trim();
+        const codigo      = String(row[6]  || '').trim();
+        const sigma       = String(row[7]  || '').trim();
+        const entrega     = String(row[9]  || '').trim();
+        const preco_unit  = Number(row[11]) || 0;
+        const val_liq_unit= Number(row[19]) || 0;  // coluna T (índice 19)
+        const total_liq   = val_liq_unit * qtd;
+        items.push({item:itemNum, qtd, desc, codigo, sigma, entrega, preco_unit:+preco_unit.toFixed(2), val_liq_unit:+val_liq_unit.toFixed(2), total_liq:+total_liq.toFixed(2)});
+      }
+
+      // Linha de totais: col L = "Valor total com ICMS"
+      const colL = String(row[11] || '').toLowerCase();
+      if (colL.includes('valor total com icms')) {
+        totalComICMS = Number(row[12]) || 0;
+        foundTotal = true;
+      }
+      if (colL.includes('valor total com ipi') && !colL.includes('difal')) {
+        totalComIPI = Number(row[12]) || 0;
+      }
+      // Também captura totais das colunas W/X (índices 22/23)
+      if (typeof row[22] === 'number' && row[22] > 0 && !totalComIPI) totalComIPI  = row[22];
+      if (typeof row[23] === 'number' && row[23] > 0) totalComIPI = Math.max(totalComIPI, row[23]);
+    }
+
+    if (items.length === 0) {
+      alert("Nenhum item encontrado na planilha. Verifique se o formato é o padrão Sinuelo.");
+      e.target.value = "";
+      return;
+    }
+
+    // Usar valor com ICMS como valor do pipeline (célula amarela padrão)
+    const valorPipeline = totalComICMS || items.reduce((s,it)=>s+(it.total_liq||0),0);
+
+    // Extrair número do orçamento do nome do arquivo
+    // Ex: MO_JACTO5LUCAS_SIQUEIRA_MO21790_26EF.xlsx → MO21790_26EF
+    const fname = file.name.replace('.xlsx','').replace('.xls','');
+    const orcNum = fname.split('_').slice(-2).join('_') || fname;
+
+    // Tentar deduzir cliente e contato do nome do arquivo
+    // Formato: MO_CLIENTE_CONTATO_NUMERO.xlsx
+    const parts = fname.split('_');
+    const clienteGuess = parts[1] || '';
+    const contatoGuess = parts.slice(2, parts.length-2).join(' ') || '';
+
+    const newOrc = {
+      id: Date.now().toString(),
+      number: orcNum,
+      client: clienteGuess,
+      contact: contatoGuess,
+      supplier: 'Momento',
+      value: +valorPipeline.toFixed(2),
+      valueComIPI: +totalComIPI.toFixed(2),
+      valueComICMS: +totalComICMS.toFixed(2),
+      date: new Date().toISOString().slice(0,10),
+      status: 'aberto',
+      oppId: '',
+      notes: `${items.length} itens importados. Valor pipeline = R$ ${valorPipeline.toLocaleString('pt-BR',{minimumFractionDigits:2})} (com ICMS).`,
+      fileName: file.name,
+      items
+    };
+
+    // Abrir modal pré-preenchido para o usuário confirmar/ajustar antes de salvar
+    setOrcForm(newOrc);
+    setOrcModal(true);
+    e.target.value = "";
+  }
+
   // VISITA MODAL (follow-up detalhado / histórico)
   const [visitaModal, setVisitaModal] = useState(false);
   const [visitaOpp, setVisitaOpp] = useState(null);
@@ -1501,7 +1599,11 @@ function App() {
                 {orcItemSearch&&<button onClick={()=>buscarItem("")}
                   style={{position:"absolute",right:"8px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"14px"}}>✕</button>}
               </div>
-              <button onClick={()=>setOrcModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600,flexShrink:0}}>+ Novo orçamento</button>
+              <label style={{padding:"5px 12px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer",fontWeight:500,flexShrink:0,display:"flex",alignItems:"center",gap:"5px"}} title="Importar planilha de orçamento (.xlsx)">
+                ↑ Importar planilha
+                <input type="file" accept=".xlsx,.xls" onChange={importOrcamentoXLSX} style={{display:"none"}}/>
+              </label>
+              <button onClick={()=>setOrcModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600,flexShrink:0}}>+ Manual</button>
             </div>
 
             {/* RESULTADOS DA BUSCA DE ITEM */}
@@ -1686,6 +1788,18 @@ function App() {
                     <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas</label>
                     <textarea value={orcForm.notes||""} onChange={e=>setOrcForm({...orcForm,notes:e.target.value})} style={{...inp,height:"46px"}}/>
                   </div>
+                  {orcForm.items&&orcForm.items.length>0&&(
+                    <div style={{background:"rgba(29,158,117,0.1)",border:"1px solid #1D9E75",borderRadius:"6px",padding:"8px 12px",marginBottom:"10px"}}>
+                      <div style={{fontSize:"11px",color:"#1D9E75",fontWeight:600}}>✓ Planilha importada — {orcForm.items.length} itens</div>
+                      <div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"2px"}}>
+                        Valor pipeline (com ICMS): R$ {(orcForm.value||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}
+                        {orcForm.valueComIPI>0&&" · Com IPI: R$ "+(orcForm.valueComIPI||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}
+                      </div>
+                      <div style={{fontSize:"10px",color:"var(--text-secondary)",marginTop:"2px"}}>
+                        {orcForm.items.slice(0,3).map(it=>it.codigo).join(", ")}{orcForm.items.length>3?"...":""}
+                      </div>
+                    </div>
+                  )}
                   <div style={{display:"flex",gap:"8px"}}>
                     <button onClick={addOrcamento} disabled={!orcForm.number||!orcForm.client} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:(orcForm.number&&orcForm.client)?"#8C1A1A":"#4A2A2A",color:(orcForm.number&&orcForm.client)?"#FFD0D0":"#7A5050",cursor:(orcForm.number&&orcForm.client)?"pointer":"default",fontWeight:600}}>Salvar</button>
                     <button onClick={()=>setOrcModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
