@@ -189,13 +189,33 @@ function App() {
   function delOrcamento(id){ saveOrcamentos(orcamentos.filter(o=>o.id!==id)); }
 
   // PROJETOS
-  const PROJ_KEY = "crm_projetos_v1";
+  const PROJ_KEY = "crm_projetos_v2";
+  const emptyProj = {
+    name:"", client:"", oppId:"", supplier:"3arm", status:"em_andamento",
+    engName:"", engRole:"Engenheiro de Aplicação",
+    deadline:"", notes:"",
+    // 3arm fields
+    arm_toolType:"", arm_brand:"", arm_itemRef:"", arm_weight:"", arm_torque:"",
+    arm_stp:"", arm_dimensions:"", arm_reactionBar:"nao",
+    arm_workVertical:false, arm_workHorizontal:false, arm_workAnyAngle:false,
+    arm_moveStation:"nao", arm_changeTool:"nao",
+    arm_heightReq:"", arm_reachReq:"", arm_limitations:"", arm_limitDesc:"",
+    arm_mount:"top",
+    // Lübbering fields
+    lub_project:"", lub_torque:"", lub_accuracy:"", lub_socket:"", lub_torqueMinMax:"min",
+    lub_outputType:"closed_offset",
+    lub_profileTypes:[], lub_specialForms:[],
+    lub_driveMachine:"", lub_articleNo:"", lub_maxTorque:"", lub_maxRPM:"",
+    lub_adaptionType:"",
+  };
   const [projetos, setProjetos] = useState(() => { try { const r=localStorage.getItem(PROJ_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
   const [projModal, setProjModal] = useState(false);
-  const [projForm, setProjForm] = useState({name:"",client:"",type:"braco_gravidade",description:"",dimensions:"",material:"",status:"em_andamento",deadline:"",engResp:"",notes:"",drawingRef:""});
+  const [projForm, setProjForm] = useState(emptyProj);
+  const [selProj, setSelProj] = useState(null);
   function saveProjetos(p){ setProjetos(p); try{ localStorage.setItem(PROJ_KEY,JSON.stringify(p)); }catch{}; }
-  function addProjeto(){ if(!projForm.name) return; saveProjetos([...projetos,{...projForm,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}]); setProjForm({name:"",client:"",type:"braco_gravidade",description:"",dimensions:"",material:"",status:"em_andamento",deadline:"",engResp:"",notes:"",drawingRef:""}); setProjModal(false); }
-  function delProjeto(id){ saveProjetos(projetos.filter(p=>p.id!==id)); }
+  function addProjeto(){ if(!projForm.name) return; saveProjetos([...projetos,{...projForm,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}]); setProjForm(emptyProj); setProjModal(false); }
+  function delProjeto(id){ saveProjetos(projetos.filter(p=>p.id!==id)); if(selProj?.id===id)setSelProj(null); }
+  function updateProj(u){ saveProjetos(projetos.map(p=>p.id===u.id?u:p)); setSelProj(u); }
 
   // TAREFAS & NOTIFICAÇÕES
   const TASKS_KEY = "crm_tasks_v1";
@@ -1812,87 +1832,116 @@ function App() {
 
         {/* ===== PROJETOS ===== */}
         {view==="projetos" && (
-          <div style={{flex:1}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-              <div style={{fontSize:"14px",fontWeight:600,color:"var(--text-primary)"}}>Projetos</div>
-              <button onClick={()=>setProjModal(true)} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer"}}>+ Novo projeto</button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:"10px"}}>
-              {projetos.length===0 && <div style={{fontSize:"13px",color:"var(--text-muted)",textAlign:"center",padding:"30px 0",gridColumn:"1/-1"}}>Nenhum projeto cadastrado</div>}
-              {projetos.map(p=>{
-                const typeLabels={"braco_gravidade":"Braço gravidade zero","fixacao":"Fixação especial","suporte":"Suporte","gabarito":"Gabarito","outro":"Outro"};
-                const stColors={"em_andamento":"#378ADD","aguardando_cliente":"#EF9F27","em_producao":"#7F77DD","concluido":"#1D9E75","cancelado":"#E24B4A"};
-                const stLabels={"em_andamento":"Em andamento","aguardando_cliente":"Aguard. cliente","em_producao":"Em produção","concluido":"Concluído","cancelado":"Cancelado"};
-                const sc=stColors[p.status]||"#888";
-                return (
-                  <div key={p.id} style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderLeft:`3px solid ${sc}`,borderRadius:"8px",padding:"14px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
-                      <div>
-                        <div style={{fontSize:"13px",fontWeight:700,color:"var(--text-primary)",marginBottom:"2px"}}>{p.name}</div>
-                        <div style={{fontSize:"10px",color:"var(--text-accent)"}}>{typeLabels[p.type]||p.type}</div>
+          <div style={{flex:1,minWidth:0,display:"flex",gap:"12px",alignItems:"flex-start"}}>
+
+            {/* LISTA */}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"12px",flexWrap:"wrap"}}>
+                <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)",flex:1}}>Projetos Técnicos</div>
+                <button onClick={()=>{setProjForm({...emptyProj,engName:profile.engName||"",engRole:profile.engRole||"Engenheiro de Aplicação"});setProjModal(true);}} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>+ Novo projeto</button>
+              </div>
+
+              {projetos.length===0&&<div style={{textAlign:"center",padding:"50px",color:"var(--text-muted)",fontSize:"13px",background:"var(--bg-card)",borderRadius:"8px",border:"1px solid var(--border)"}}>Nenhum projeto cadastrado. Clique em "+ Novo projeto" para começar.</div>}
+
+              <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                {projetos.map(p=>{
+                  const supColor=p.supplier==="3arm"?"#E24B4A":p.supplier==="Lubbering"?"#185FA5":"#888";
+                  const stColors={"em_andamento":"#378ADD","aguardando_cliente":"#EF9F27","em_producao":"#7F77DD","concluido":"#1D9E75","cancelado":"#888"};
+                  const stLabels={"em_andamento":"Em andamento","aguardando_cliente":"Aguard. cliente","em_producao":"Em produção","concluido":"Concluído","cancelado":"Cancelado"};
+                  const opp = opps.find(o=>o.id===p.oppId);
+                  return (
+                    <div key={p.id} onClick={()=>setSelProj(selProj?.id===p.id?null:p)}
+                      style={{background:"var(--bg-card)",border:`1px solid ${selProj?.id===p.id?"#8C1A1A":"var(--border)"}`,borderLeft:`3px solid ${supColor}`,borderRadius:"8px",padding:"12px 14px",cursor:"pointer"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:"8px"}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:"13px",fontWeight:700,color:"var(--text-primary)",marginBottom:"2px"}}>{p.name}</div>
+                          <div style={{display:"flex",gap:"8px",flexWrap:"wrap",fontSize:"11px",color:"var(--text-secondary)"}}>
+                            <span>{p.client||"—"}</span>
+                            {opp&&<span style={{color:"var(--text-blue)"}}>🔗 {opp.title.slice(0,30)}</span>}
+                            {p.engName&&<span>👤 {p.engName} ({p.engRole})</span>}
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:"6px",alignItems:"center",flexShrink:0}}>
+                          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"8px",background:supColor+"22",color:supColor,fontWeight:700}}>{p.supplier}</span>
+                          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"8px",background:(stColors[p.status]||"#888")+"22",color:stColors[p.status]||"#888",fontWeight:600}}>{stLabels[p.status]||p.status}</span>
+                          {p.deadline&&<span style={{fontSize:"10px",color:"var(--text-muted)"}}>📅 {p.deadline}</span>}
+                          <button onClick={e=>{e.stopPropagation();delProjeto(p.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"14px",padding:"0 2px"}}>✕</button>
+                        </div>
                       </div>
-                      <div style={{display:"flex",gap:"5px",alignItems:"center"}}>
-                        <span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:sc+"22",color:sc,fontWeight:600}}>{stLabels[p.status]}</span>
-                        <button onClick={()=>delProjeto(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"12px"}}>✕</button>
-                      </div>
+                      {p.notes&&<div style={{fontSize:"11px",color:"var(--text-secondary)",marginTop:"6px",lineHeight:1.4}}>{p.notes.slice(0,120)}{p.notes.length>120?"…":""}</div>}
                     </div>
-                    <div style={{fontSize:"11px",color:"var(--text-secondary)",marginBottom:"6px"}}>{p.client||"— cliente não informado"}</div>
-                    {p.description && <div style={{fontSize:"11px",color:"var(--text-primary)",marginBottom:"6px",lineHeight:1.5}}>{p.description}</div>}
-                    {(p.dimensions||p.material||p.drawingRef) && (
-                      <div style={{background:"var(--bg-card2)",borderRadius:"5px",padding:"7px 9px",marginBottom:"6px"}}>
-                        {p.dimensions && <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"2px"}}>Dimensões: <span style={{color:"var(--text-primary)"}}>{p.dimensions}</span></div>}
-                        {p.material   && <div style={{fontSize:"10px",color:"var(--text-secondary)",marginBottom:"2px"}}>Material: <span style={{color:"var(--text-primary)"}}>{p.material}</span></div>}
-                        {p.drawingRef && <div style={{fontSize:"10px",color:"var(--text-secondary)"}}>Desenho ref.: <span style={{color:"var(--text-accent)"}}>{p.drawingRef}</span></div>}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* PAINEL DETALHE DO PROJETO */}
+            {selProj&&(
+              <div style={{width:"360px",flexShrink:0,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",padding:"14px",position:"sticky",top:"60px",maxHeight:"calc(100vh - 130px)",overflowY:"auto"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                  <div style={{fontSize:"13px",fontWeight:700,color:"var(--text-primary)"}}>{selProj.name}</div>
+                  <button onClick={()=>setSelProj(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px"}}>✕</button>
+                </div>
+                {/* Supplier badge */}
+                <div style={{marginBottom:"12px"}}>
+                  <span style={{fontSize:"11px",padding:"3px 10px",borderRadius:"8px",background:selProj.supplier==="3arm"?"rgba(226,75,74,0.15)":"rgba(24,95,165,0.15)",color:selProj.supplier==="3arm"?"#E24B4A":"#185FA5",fontWeight:700}}>{selProj.supplier}</span>
+                  {selProj.engName&&<span style={{marginLeft:"8px",fontSize:"11px",color:"var(--text-secondary)"}}>👤 {selProj.engName} · {selProj.engRole}</span>}
+                </div>
+
+                {/* 3arm questionnaire view */}
+                {selProj.supplier==="3arm"&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:"8px",fontSize:"11px"}}>
+                    {[
+                      ["Ferramenta",selProj.arm_toolType],["Marca",selProj.arm_brand],
+                      ["Ref. do item",selProj.arm_itemRef],["Dimensões",selProj.arm_dimensions],
+                      ["Peso",selProj.arm_weight&&selProj.arm_weight+"kg"],["Torque máx.",selProj.arm_torque&&selProj.arm_torque+"Nm"],
+                      ["STP / 3D",selProj.arm_stp],["Barra de reação",selProj.arm_reactionBar],
+                      ["Altura requerida",selProj.arm_heightReq&&selProj.arm_heightReq+"mm"],["Alcance requerido",selProj.arm_reachReq&&selProj.arm_reachReq+"mm"],
+                      ["Move entre estações",selProj.arm_moveStation],["Troca de ferramenta",selProj.arm_changeTool],
+                      ["Montagem",selProj.arm_mount],["Limitações",selProj.arm_limitDesc],
+                    ].filter(([,v])=>v).map(([k,v])=>(
+                      <div key={k} style={{display:"flex",gap:"8px",padding:"4px 0",borderBottom:"1px solid var(--border2)"}}>
+                        <span style={{color:"var(--text-secondary)",width:"130px",flexShrink:0,fontWeight:600}}>{k}</span>
+                        <span style={{color:"var(--text-primary)"}}>{v}</span>
+                      </div>
+                    ))}
+                    {(selProj.arm_workVertical||selProj.arm_workHorizontal||selProj.arm_workAnyAngle)&&(
+                      <div style={{display:"flex",gap:"8px",padding:"4px 0",borderBottom:"1px solid var(--border2)"}}>
+                        <span style={{color:"var(--text-secondary)",width:"130px",flexShrink:0,fontWeight:600}}>Posição de trabalho</span>
+                        <span style={{color:"var(--text-primary)"}}>{[selProj.arm_workVertical&&"Vertical",selProj.arm_workHorizontal&&"Horizontal",selProj.arm_workAnyAngle&&"Qualquer ângulo"].filter(Boolean).join(", ")}</span>
                       </div>
                     )}
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      {p.deadline && <span style={{fontSize:"10px",color:"var(--text-secondary)"}}>Prazo: {p.deadline}</span>}
-                      {p.engResp  && <span style={{fontSize:"10px",color:"var(--text-green)"}}>Eng: {p.engResp}</span>}
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-            {projModal && (
-              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
-                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"400px",maxWidth:"90vw",maxHeight:"88vh",overflowY:"auto"}}>
-                  <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Novo projeto</div>
-                  {[["name","Nome do projeto *","text"],["client","Cliente","text"],["dimensions","Dimensões / medidas","text"],["material","Material","text"],["drawingRef","Referência do desenho","text"],["deadline","Prazo","date"],["engResp","Engenheiro responsável","text"]].map(([k,lb,t])=>(
-                    <div key={k} style={{marginBottom:"8px"}}>
-                      <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lb}</label>
-                      <input type={t} value={projForm[k]||""} onChange={e=>setProjForm({...projForm,[k]:e.target.value})} style={inp}/>
-                    </div>
-                  ))}
-                  <div style={{marginBottom:"8px"}}>
-                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Tipo de projeto</label>
-                    <select value={projForm.type} onChange={e=>setProjForm({...projForm,type:e.target.value})} style={inp}>
-                      <option value="braco_gravidade">Braço gravidade zero</option><option value="fixacao">Fixação especial</option><option value="suporte">Suporte</option><option value="gabarito">Gabarito</option><option value="outro">Outro</option>
-                    </select>
+                )}
+
+                {/* Lübbering questionnaire view */}
+                {selProj.supplier==="Lubbering"&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:"8px",fontSize:"11px"}}>
+                    {[
+                      ["Projeto",selProj.lub_project],
+                      ["Torque",selProj.lub_torque&&selProj.lub_torque+"Nm ("+selProj.lub_torqueMinMax+")"],
+                      ["Precisão",selProj.lub_accuracy],["Bitola (SW)",selProj.lub_socket],
+                      ["Tipo de saída",selProj.lub_outputType],
+                      ["Perfis selecionados",(selProj.lub_profileTypes||[]).join(", ")],
+                      ["Formas especiais",(selProj.lub_specialForms||[]).join(", ")],
+                      ["Máquina motriz",selProj.lub_driveMachine],["Artigo nº",selProj.lub_articleNo],
+                      ["Torque máx. (máq.)",selProj.lub_maxTorque&&selProj.lub_maxTorque+"Nm"],
+                      ["RPM máx.",selProj.lub_maxRPM],["Tipo de adaptação",selProj.lub_adaptionType],
+                    ].filter(([,v])=>v).map(([k,v])=>(
+                      <div key={k} style={{display:"flex",gap:"8px",padding:"4px 0",borderBottom:"1px solid var(--border2)"}}>
+                        <span style={{color:"var(--text-secondary)",width:"150px",flexShrink:0,fontWeight:600}}>{k}</span>
+                        <span style={{color:"var(--text-primary)"}}>{v}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div style={{marginBottom:"8px"}}>
-                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Status</label>
-                    <select value={projForm.status} onChange={e=>setProjForm({...projForm,status:e.target.value})} style={inp}>
-                      <option value="em_andamento">Em andamento</option><option value="aguardando_cliente">Aguardando cliente</option><option value="em_producao">Em produção</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option>
-                    </select>
-                  </div>
-                  <div style={{marginBottom:"10px"}}>
-                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Descrição / observações</label>
-                    <textarea value={projForm.description||""} onChange={e=>setProjForm({...projForm,description:e.target.value})} style={{...inp,height:"60px"}} placeholder="Descreva o projeto, requisitos do cliente, aplicação..."/>
-                  </div>
-                  <div style={{marginBottom:"10px"}}>
-                    <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>Notas internas</label>
-                    <textarea value={projForm.notes||""} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"46px"}}/>
-                  </div>
-                  <div style={{display:"flex",gap:"8px"}}>
-                    <button onClick={addProjeto} disabled={!projForm.name} style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"6px",border:"none",background:projForm.name?"#8C1A1A":"#4A2A2A",color:projForm.name?"#FFD0D0":"#7A5050",cursor:projForm.name?"pointer":"default",fontWeight:600}}>Salvar</button>
-                    <button onClick={()=>setProjModal(false)} style={{padding:"9px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
-                  </div>
-                </div>
+                )}
+
+                {selProj.notes&&<div style={{marginTop:"10px",background:"var(--bg-card2)",borderRadius:"6px",padding:"8px 10px",fontSize:"11px",color:"var(--text-secondary)",lineHeight:1.5}}>{selProj.notes}</div>}
+                <button onClick={()=>{setProjForm({...selProj});setProjModal(true);}} style={{width:"100%",marginTop:"10px",padding:"7px",fontSize:"11px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>✏ Editar projeto</button>
               </div>
             )}
           </div>
         )}
-
         {/* PAINEL DETALHE */}
         {sel && (
           <div style={{width:"300px",flexShrink:0,background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",position:"sticky",top:"60px",display:"flex",flexDirection:"column",maxHeight:"calc(100vh - 130px)"}}>
@@ -2298,6 +2347,22 @@ function App() {
               </div>
             </div>
 
+            {/* Engenheiro de suporte padrão */}
+            <div style={{marginBottom:"20px"}}>
+              <div style={{fontSize:"12px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Engenheiro / Suporte padrão (Projetos)</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 12px"}}>
+                <div>
+                  <label style={lbl}>Função / Cargo</label>
+                  <input value={profile.engRole||"Engenheiro de Aplicação"} onChange={e=>saveProfile({...profile,engRole:e.target.value})} style={inp} placeholder="Ex: Engenheiro de Aplicação"/>
+                </div>
+                <div>
+                  <label style={lbl}>Nome</label>
+                  <input value={profile.engName||""} onChange={e=>saveProfile({...profile,engName:e.target.value})} style={inp} placeholder="Nome do engenheiro/técnico"/>
+                </div>
+              </div>
+              <div style={{fontSize:"10px",color:"var(--text-muted)",marginTop:"4px"}}>Pré-preenche automaticamente em novos projetos. Pode ser alterado projeto a projeto.</div>
+            </div>
+
             {/* Dados */}
             <div style={{marginBottom:"8px"}}>
               <div style={{fontSize:"12px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Dados</div>
@@ -2311,6 +2376,323 @@ function App() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PROJETO */}
+      {projModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60,padding:"12px"}}>
+          <div style={{background:"var(--bg-card)",borderRadius:"12px",border:"1px solid var(--border)",width:"640px",maxWidth:"100%",maxHeight:"95vh",overflowY:"auto",display:"flex",flexDirection:"column"}}>
+
+            {/* Header */}
+            <div style={{padding:"16px 20px 12px",borderBottom:"1px solid var(--border2)",flexShrink:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)"}}>{projForm.id?"Editar projeto":"Novo projeto técnico"}</div>
+                <button onClick={()=>setProjModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+              </div>
+
+              {/* DADOS GERAIS — sempre visíveis */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={lbl}>Nome do projeto *</label>
+                  <input value={projForm.name} onChange={e=>setProjForm({...projForm,name:e.target.value})} style={inp} placeholder="Ex: Braço 3arm linha montagem Honda"/>
+                </div>
+                <div>
+                  <label style={lbl}>Cliente</label>
+                  <input value={projForm.client} onChange={e=>setProjForm({...projForm,client:e.target.value})} style={inp} placeholder="Ex: Caterpillar"/>
+                </div>
+                <div>
+                  <label style={lbl}>Vincular oportunidade</label>
+                  <select value={projForm.oppId} onChange={e=>setProjForm({...projForm,oppId:e.target.value,client:e.target.value?opps.find(o=>o.id===e.target.value)?.company||projForm.client:projForm.client})} style={inp}>
+                    <option value="">— Nenhuma —</option>
+                    {opps.filter(o=>o.stage!=="fechado").map(o=><option key={o.id} value={o.id}>{o.company} · {o.title.slice(0,35)}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Engenheiro de suporte */}
+              <div style={{background:"rgba(24,95,165,0.08)",borderRadius:"8px",padding:"10px 12px",marginBottom:"10px"}}>
+                <div style={{fontSize:"10px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Engenheiro / Suporte</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                  <div>
+                    <label style={lbl}>Função / Cargo</label>
+                    <input value={projForm.engRole} onChange={e=>setProjForm({...projForm,engRole:e.target.value})} style={inp} placeholder="Ex: Engenheiro de Aplicação"/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Nome</label>
+                    <input value={projForm.engName} onChange={e=>setProjForm({...projForm,engName:e.target.value})} style={inp} placeholder="Nome do responsável"/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status e prazo */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"4px"}}>
+                <div>
+                  <label style={lbl}>Status</label>
+                  <select value={projForm.status} onChange={e=>setProjForm({...projForm,status:e.target.value})} style={inp}>
+                    <option value="em_andamento">Em andamento</option>
+                    <option value="aguardando_cliente">Aguardando cliente</option>
+                    <option value="em_producao">Em produção</option>
+                    <option value="concluido">Concluído</option>
+                    <option value="cancelado">Cancelado</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Prazo</label>
+                  <input type="date" value={projForm.deadline} onChange={e=>setProjForm({...projForm,deadline:e.target.value})} style={inp}/>
+                </div>
+              </div>
+            </div>
+
+            {/* Seleção de fornecedor */}
+            <div style={{padding:"12px 20px",borderBottom:"1px solid var(--border2)",flexShrink:0}}>
+              <label style={lbl}>Fornecedor / Formulário técnico</label>
+              <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
+                {[["3arm","3arm","#E24B4A"],["Lubbering","Lübbering","#185FA5"],["outro","Outro","#888"]].map(([v,l,c])=>(
+                  <button key={v} onClick={()=>setProjForm({...projForm,supplier:v})}
+                    style={{flex:1,padding:"8px",fontSize:"12px",borderRadius:"8px",border:`2px solid ${projForm.supplier===v?c:"var(--border)"}`,background:projForm.supplier===v?c+"18":"transparent",color:projForm.supplier===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.supplier===v?700:400}}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* FORMULÁRIO 3ARM */}
+            {projForm.supplier==="3arm"&&(
+              <div style={{padding:"14px 20px",overflowY:"auto",flex:1}}>
+                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"12px"}}>2 · Kind of Tool</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"14px"}}>
+                  <div>
+                    <label style={lbl}>Tipo de ferramenta</label>
+                    <select value={projForm.arm_toolType} onChange={e=>setProjForm({...projForm,arm_toolType:e.target.value})} style={inp}>
+                      <option value="">Selecionar...</option>
+                      <option>Grinder</option><option>Drill</option><option>Magnetic Drill</option>
+                      <option>Scanner / Câmera</option><option>Impact Wrench</option><option>Tightening Tool</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Marca (Brand)</label>
+                    <input value={projForm.arm_brand} onChange={e=>setProjForm({...projForm,arm_brand:e.target.value})} style={inp} placeholder="Ex: Norbar, Bosch, Panasonic"/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Referência do item</label>
+                    <input value={projForm.arm_itemRef} onChange={e=>setProjForm({...projForm,arm_itemRef:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>STP / 3D disponível</label>
+                    <select value={projForm.arm_stp} onChange={e=>setProjForm({...projForm,arm_stp:e.target.value})} style={inp}>
+                      <option value="">—</option><option value="sim">Sim</option><option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Dimensões (mm)</label>
+                    <input value={projForm.arm_dimensions} onChange={e=>setProjForm({...projForm,arm_dimensions:e.target.value})} style={inp} placeholder="C x L x A"/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Peso (kg)</label>
+                    <input type="number" value={projForm.arm_weight} onChange={e=>setProjForm({...projForm,arm_weight:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Torque máx. (Nm)</label>
+                    <input type="number" value={projForm.arm_torque} onChange={e=>setProjForm({...projForm,arm_torque:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Barra de reação (Reaction bar)</label>
+                    <select value={projForm.arm_reactionBar} onChange={e=>setProjForm({...projForm,arm_reactionBar:e.target.value})} style={inp}>
+                      <option value="sim">Sim</option><option value="nao">Não</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>3 · Working Conditions</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                  {[["arm_workVertical","Vertical"],["arm_workHorizontal","Horizontal"],["arm_workAnyAngle","Qualquer ângulo"]].map(([k,l])=>(
+                    <label key={k} style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"var(--text-secondary)",cursor:"pointer",background:"var(--bg-card2)",padding:"7px 10px",borderRadius:"6px",border:`1px solid ${projForm[k]?"#E24B4A":"var(--border)"}`}}>
+                      <input type="checkbox" checked={!!projForm[k]} onChange={e=>setProjForm({...projForm,[k]:e.target.checked})} style={{cursor:"pointer"}}/>
+                      {l}
+                    </label>
+                  ))}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"14px"}}>
+                  <div>
+                    <label style={lbl}>Move entre estações?</label>
+                    <select value={projForm.arm_moveStation} onChange={e=>setProjForm({...projForm,arm_moveStation:e.target.value})} style={inp}>
+                      <option value="sim">Sim</option><option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Troca a ferramenta frequentemente?</label>
+                    <select value={projForm.arm_changeTool} onChange={e=>setProjForm({...projForm,arm_changeTool:e.target.value})} style={inp}>
+                      <option value="sim">Sim</option><option value="nao">Não</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>4 · Work Place</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                  <div>
+                    <label style={lbl}>Altura requerida (mm)</label>
+                    <input type="number" value={projForm.arm_heightReq} onChange={e=>setProjForm({...projForm,arm_heightReq:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Alcance requerido (mm)</label>
+                    <input type="number" value={projForm.arm_reachReq} onChange={e=>setProjForm({...projForm,arm_reachReq:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Limitações no entorno?</label>
+                    <select value={projForm.arm_limitations} onChange={e=>setProjForm({...projForm,arm_limitations:e.target.value})} style={inp}>
+                      <option value="sim">Sim</option><option value="nao">Não</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Se sim, especifique</label>
+                    <input value={projForm.arm_limitDesc} onChange={e=>setProjForm({...projForm,arm_limitDesc:e.target.value})} style={inp} placeholder="Descreva as limitações"/>
+                  </div>
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>5 · Installation Requirements</div>
+                <div style={{marginBottom:"14px"}}>
+                  <label style={lbl}>Tipo de montagem</label>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    {[["top","Top mount (por cima)"],["bottom","Bottom mount (por baixo)"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setProjForm({...projForm,arm_mount:v})}
+                        style={{flex:1,padding:"8px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${projForm.arm_mount===v?"#E24B4A":"var(--border)"}`,background:projForm.arm_mount===v?"rgba(226,75,74,0.12)":"transparent",color:projForm.arm_mount===v?"#E24B4A":"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.arm_mount===v?600:400}}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FORMULÁRIO LÜBBERING */}
+            {projForm.supplier==="Lubbering"&&(
+              <div style={{padding:"14px 20px",overflowY:"auto",flex:1}}>
+                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"10px"}}>Projektbezeichnung · Project</div>
+                <div style={{marginBottom:"14px"}}>
+                  <input value={projForm.lub_project} onChange={e=>setProjForm({...projForm,lub_project:e.target.value})} style={inp} placeholder="Nome/descrição do projeto Lübbering"/>
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"10px"}}>Technische Angaben · Technical Details</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                  <div>
+                    <label style={lbl}>Torque (Nm)</label>
+                    <input type="number" value={projForm.lub_torque} onChange={e=>setProjForm({...projForm,lub_torque:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Min / Max</label>
+                    <select value={projForm.lub_torqueMinMax} onChange={e=>setProjForm({...projForm,lub_torqueMinMax:e.target.value})} style={inp}>
+                      <option value="min">Min</option><option value="max">Max</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Precisão (Accuracy)</label>
+                    <input value={projForm.lub_accuracy} onChange={e=>setProjForm({...projForm,lub_accuracy:e.target.value})} style={inp} placeholder="Ex: ±3%"/>
+                  </div>
+                  <div style={{gridColumn:"1/-1"}}>
+                    <label style={lbl}>Bitola — Schlüsselweite (Socket size)</label>
+                    <input value={projForm.lub_socket} onChange={e=>setProjForm({...projForm,lub_socket:e.target.value})} style={inp} placeholder="Ex: SW19, SW24..."/>
+                  </div>
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Abtrieb · Output type</div>
+                <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
+                  {[["closed_offset","Closed offset"],["open_offset","Open offset"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setProjForm({...projForm,lub_outputType:v})}
+                      style={{flex:1,padding:"8px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${projForm.lub_outputType===v?"#185FA5":"var(--border)"}`,background:projForm.lub_outputType===v?"rgba(24,95,165,0.12)":"transparent",color:projForm.lub_outputType===v?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.lub_outputType===v?600:400}}>{l}</button>
+                  ))}
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Abtriebsprofile · Socket Profiles</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"5px",marginBottom:"14px"}}>
+                  {["HEX","DH","BH","SFD","PF","NH","Torx E","Torx TX","SD","HD","AVZ","IVZ"].map(p=>{
+                    const sel=( projForm.lub_profileTypes||[]).includes(p);
+                    return (
+                      <button key={p} onClick={()=>{
+                        const cur=projForm.lub_profileTypes||[];
+                        setProjForm({...projForm,lub_profileTypes:sel?cur.filter(x=>x!==p):[...cur,p]});
+                      }} style={{padding:"6px 4px",fontSize:"10px",borderRadius:"5px",border:`1px solid ${sel?"#185FA5":"var(--border)"}`,background:sel?"rgba(24,95,165,0.12)":"transparent",color:sel?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:sel?700:400,textAlign:"center"}}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Sonderformen · Special Forms</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"5px",marginBottom:"14px"}}>
+                  {["Außenlänge (Extended length)","Durchgeräumt (Broached)","Profiltiefe (Profile depth)","BH-Standard","BH-Sonder (bolt retaining)","Magnet Sackloch (blind hole)","Magnet Kernloch (core hole)","Abtrieb federnd (elastic)"].map(f=>{
+                    const sel=(projForm.lub_specialForms||[]).includes(f);
+                    return (
+                      <button key={f} onClick={()=>{
+                        const cur=projForm.lub_specialForms||[];
+                        setProjForm({...projForm,lub_specialForms:sel?cur.filter(x=>x!==f):[...cur,f]});
+                      }} style={{padding:"5px 7px",fontSize:"10px",borderRadius:"5px",border:`1px solid ${sel?"#185FA5":"var(--border)"}`,background:sel?"rgba(24,95,165,0.12)":"transparent",color:sel?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:sel?600:400,textAlign:"left"}}>
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Adaption · Driving machine</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                  <div>
+                    <label style={lbl}>Tipo de adaptação</label>
+                    <select value={projForm.lub_adaptionType} onChange={e=>setProjForm({...projForm,lub_adaptionType:e.target.value})} style={inp}>
+                      <option value="">Selecionar...</option>
+                      <option>Angle head 90°</option>
+                      <option>Angle head 110°</option>
+                      <option>Straight spindle</option>
+                      <option>Pistol grip machine</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Máquina motriz</label>
+                    <input value={projForm.lub_driveMachine} onChange={e=>setProjForm({...projForm,lub_driveMachine:e.target.value})} style={inp} placeholder="Ex: Bosch IW, Norbar EBT"/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Artigo nº</label>
+                    <input value={projForm.lub_articleNo} onChange={e=>setProjForm({...projForm,lub_articleNo:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Torque máx. máq. (Nm)</label>
+                    <input type="number" value={projForm.lub_maxTorque} onChange={e=>setProjForm({...projForm,lub_maxTorque:e.target.value})} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>RPM máx.</label>
+                    <input type="number" value={projForm.lub_maxRPM} onChange={e=>setProjForm({...projForm,lub_maxRPM:e.target.value})} style={inp}/>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Outro fornecedor */}
+            {projForm.supplier==="outro"&&(
+              <div style={{padding:"14px 20px",flex:1}}>
+                <label style={lbl}>Descrição / especificações técnicas</label>
+                <textarea value={projForm.notes} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"120px"}} placeholder="Descreva os requisitos do projeto..."/>
+              </div>
+            )}
+
+            {/* Notas — sempre visível */}
+            <div style={{padding:"0 20px 8px"}}>
+              <label style={lbl}>Notas internas</label>
+              <textarea value={projForm.notes} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"56px"}} placeholder="Observações, fotos disponíveis, contexto..."/>
+            </div>
+
+            {/* Footer */}
+            <div style={{padding:"12px 20px",borderTop:"1px solid var(--border2)",display:"flex",gap:"8px",flexShrink:0}}>
+              <button onClick={()=>{
+                if(!projForm.name) return;
+                if(projForm.id){
+                  updateProj(projForm);
+                  setSelProj(projForm);
+                } else {
+                  addProjeto();
+                }
+                setProjModal(false);
+              }} disabled={!projForm.name}
+                style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:projForm.name?"#8C1A1A":"#4A2A2A",color:projForm.name?"#FFD0D0":"#7A5050",cursor:projForm.name?"pointer":"default",fontWeight:600}}>
+                {projForm.id?"Salvar alterações":"Criar projeto"}
+              </button>
+              <button onClick={()=>setProjModal(false)} style={{padding:"10px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+            </div>
           </div>
         </div>
       )}
