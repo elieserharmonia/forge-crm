@@ -150,11 +150,12 @@ function App() {
 
   // ORÇAMENTOS
   const ORC_KEY = "crm_orcamentos_v1";
-  const [orcamentos, setOrcamentos] = useState(() => { try { const r=localStorage.getItem(ORC_KEY); return r?JSON.parse(r):[]; } catch { return []; }});
+  const [orcamentos, setOrcamentos] = useState(() => { try { const r=localStorage.getItem(ORC_KEY); return r?JSON.parse(r):[{"id": "1714600000001", "number": "MO21790_26EF", "client": "Jacto - Pompeia", "contact": "Lucas Leme Siqueira", "supplier": "Momento", "value": 13638.39, "valueComIPI": 14347.58, "valueComICMS": 13638.39, "date": "2026-04-20", "status": "aberto", "oppId": "", "notes": "12 itens — Soquetes de impacto SD 1/2\\\" diversas bitolas. Valor pipeline = R$ 13.638,39 (VALOR TOTAL COM ICMS, coluna amarela). Valor com IPI = R$ 14.347,58.", "fileName": "MO_JACTO5LUCAS_SIQUEIRA_MO21790_26EF.xlsx", "items": [{"item": 1, "qtd": 2, "codigo": "4-22LDRP", "sigma": "301100252", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO REVESTIDO, SD 1/2\" X A/F 22", "entrega": "1UN. 5 DIAS, DEMAIS 60 DIAS", "preco_unit": 907.82, "val_liq_unit": 839.7, "total_liq": 1679.4}, {"item": 2, "qtd": 2, "codigo": "4-10RP", "sigma": "301100038", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 10MM - COM CAPA", "entrega": "5 DIAS", "preco_unit": 278.24, "val_liq_unit": 257.36, "total_liq": 514.72}, {"item": 3, "qtd": 2, "codigo": "4-22LDRP", "sigma": "301100252", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO REVESTIDO, SD 1/2\" X A/F 22", "entrega": "60 DIAS", "preco_unit": 907.82, "val_liq_unit": 839.7, "total_liq": 1679.4}, {"item": 4, "qtd": 2, "codigo": "4-10LRP", "sigma": "301100745", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO SD 1/2 X A/F10MM, L=82MM", "entrega": "5 DIAS", "preco_unit": 452.92, "val_liq_unit": 418.94, "total_liq": 837.87}, {"item": 5, "qtd": 2, "codigo": "4-13LRP", "sigma": "301100736", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO SD1/2 X A/F 13MM L=82MM", "entrega": "45 DIAS", "preco_unit": 498.33, "val_liq_unit": 460.94, "total_liq": 921.87}, {"item": 6, "qtd": 2, "codigo": "4-30=1 3/16RP", "sigma": "301327012", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 30MM = 1 3/16\"", "entrega": "45 DIAS", "preco_unit": 515.52, "val_liq_unit": 476.83, "total_liq": 953.66}, {"item": 7, "qtd": 2, "codigo": "4-41RP", "sigma": "301327039", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 41mm", "entrega": "45 DIAS", "preco_unit": 715.95, "val_liq_unit": 662.23, "total_liq": 1324.46}, {"item": 8, "qtd": 2, "codigo": "4-24LRP", "sigma": "399315560", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO, SD 1/2\" X A/F 24mm, L=82mm", "entrega": "45 DIAS", "preco_unit": 756.99, "val_liq_unit": 700.19, "total_liq": 1400.37}, {"item": 9, "qtd": 2, "codigo": "4-13RP", "sigma": "301100040", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 13MM, COM CAPA", "entrega": "5 DIAS", "preco_unit": 278.24, "val_liq_unit": 257.36, "total_liq": 514.72}, {"item": 10, "qtd": 2, "codigo": "4-22LDRP", "sigma": "301100252", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO REVESTIDO, SD 1/2\" X A/F 22", "entrega": "60 DIAS", "preco_unit": 907.82, "val_liq_unit": 839.7, "total_liq": 1679.4}, {"item": 11, "qtd": 2, "codigo": "4-17RP", "sigma": "301100043", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 17MM, COM CAPA", "entrega": "5 DIAS", "preco_unit": 299.77, "val_liq_unit": 277.27, "total_liq": 554.54}, {"item": 12, "qtd": 2, "codigo": "4-19=3/4RP", "sigma": "301100045", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 19MM = 3/4\"", "entrega": "5 DIAS", "preco_unit": 299.77, "val_liq_unit": 277.27, "total_liq": 554.54}]}]; } catch { return [{"id": "1714600000001", "number": "MO21790_26EF", "client": "Jacto - Pompeia", "contact": "Lucas Leme Siqueira", "supplier": "Momento", "value": 13638.39, "valueComIPI": 14347.58, "valueComICMS": 13638.39, "date": "2026-04-20", "status": "aberto", "oppId": "", "notes": "12 itens — Soquetes de impacto SD 1/2\\\" diversas bitolas. Valor pipeline = R$ 13.638,39 (VALOR TOTAL COM ICMS, coluna amarela). Valor com IPI = R$ 14.347,58.", "fileName": "MO_JACTO5LUCAS_SIQUEIRA_MO21790_26EF.xlsx", "items": [{"item": 1, "qtd": 2, "codigo": "4-22LDRP", "sigma": "301100252", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO REVESTIDO, SD 1/2\" X A/F 22", "entrega": "1UN. 5 DIAS, DEMAIS 60 DIAS", "preco_unit": 907.82, "val_liq_unit": 839.7, "total_liq": 1679.4}, {"item": 2, "qtd": 2, "codigo": "4-10RP", "sigma": "301100038", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 10MM - COM CAPA", "entrega": "5 DIAS", "preco_unit": 278.24, "val_liq_unit": 257.36, "total_liq": 514.72}, {"item": 3, "qtd": 2, "codigo": "4-22LDRP", "sigma": "301100252", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO REVESTIDO, SD 1/2\" X A/F 22", "entrega": "60 DIAS", "preco_unit": 907.82, "val_liq_unit": 839.7, "total_liq": 1679.4}, {"item": 4, "qtd": 2, "codigo": "4-10LRP", "sigma": "301100745", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO SD 1/2 X A/F10MM, L=82MM", "entrega": "5 DIAS", "preco_unit": 452.92, "val_liq_unit": 418.94, "total_liq": 837.87}, {"item": 5, "qtd": 2, "codigo": "4-13LRP", "sigma": "301100736", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO SD1/2 X A/F 13MM L=82MM", "entrega": "45 DIAS", "preco_unit": 498.33, "val_liq_unit": 460.94, "total_liq": 921.87}, {"item": 6, "qtd": 2, "codigo": "4-30=1 3/16RP", "sigma": "301327012", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 30MM = 1 3/16\"", "entrega": "45 DIAS", "preco_unit": 515.52, "val_liq_unit": 476.83, "total_liq": 953.66}, {"item": 7, "qtd": 2, "codigo": "4-41RP", "sigma": "301327039", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 41mm", "entrega": "45 DIAS", "preco_unit": 715.95, "val_liq_unit": 662.23, "total_liq": 1324.46}, {"item": 8, "qtd": 2, "codigo": "4-24LRP", "sigma": "399315560", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO, SD 1/2\" X A/F 24mm, L=82mm", "entrega": "45 DIAS", "preco_unit": 756.99, "val_liq_unit": 700.19, "total_liq": 1400.37}, {"item": 9, "qtd": 2, "codigo": "4-13RP", "sigma": "301100040", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 13MM, COM CAPA", "entrega": "5 DIAS", "preco_unit": 278.24, "val_liq_unit": 257.36, "total_liq": 514.72}, {"item": 10, "qtd": 2, "codigo": "4-22LDRP", "sigma": "301100252", "desc": "SOQUETE DE IMPACTO LONGO MOMENTO REVESTIDO, SD 1/2\" X A/F 22", "entrega": "60 DIAS", "preco_unit": 907.82, "val_liq_unit": 839.7, "total_liq": 1679.4}, {"item": 11, "qtd": 2, "codigo": "4-17RP", "sigma": "301100043", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 17MM, COM CAPA", "entrega": "5 DIAS", "preco_unit": 299.77, "val_liq_unit": 277.27, "total_liq": 554.54}, {"item": 12, "qtd": 2, "codigo": "4-19=3/4RP", "sigma": "301100045", "desc": "SOQUETE DE IMPACTO MOMENTO, SD 1/2\" X A/F 19MM = 3/4\"", "entrega": "5 DIAS", "preco_unit": 299.77, "val_liq_unit": 277.27, "total_liq": 554.54}]}]; } });
   const [orcModal, setOrcModal] = useState(false);
-  const [orcForm, setOrcForm] = useState({number:"",client:"",contact:"",supplier:"",value:0,date:"",status:"aberto",oppId:"",notes:"",fileName:""});
+  const [selOrc, setSelOrc] = useState(null);
+  const [orcForm, setOrcForm] = useState({number:"",client:"",contact:"",supplier:"",value:0,valueComIPI:0,valueComICMS:0,date:"",status:"aberto",oppId:"",notes:"",fileName:"",items:[]});
   function saveOrcamentos(o){ setOrcamentos(o); try{ localStorage.setItem(ORC_KEY,JSON.stringify(o)); }catch{}; }
-  function addOrcamento(){ if(!orcForm.number||!orcForm.client) return; saveOrcamentos([...orcamentos,{...orcForm,id:Date.now(),value:Number(orcForm.value)}]); setOrcForm({number:"",client:"",contact:"",supplier:"",value:0,date:"",status:"aberto",oppId:"",notes:"",fileName:""}); setOrcModal(false); }
+  function addOrcamento(){ if(!orcForm.number||!orcForm.client) return; saveOrcamentos([...orcamentos,{...orcForm,id:Date.now(),value:Number(orcForm.value),valueComIPI:Number(orcForm.valueComIPI||0),valueComICMS:Number(orcForm.valueComICMS||0)}]); setOrcForm({number:"",client:"",contact:"",supplier:"",value:0,valueComIPI:0,valueComICMS:0,date:"",status:"aberto",oppId:"",notes:"",fileName:"",items:[]}); setOrcModal(false); }
   function delOrcamento(id){ saveOrcamentos(orcamentos.filter(o=>o.id!==id)); }
 
   // PROJETOS
@@ -1466,9 +1467,11 @@ function App() {
               const ap=orcamentos.filter(o=>o.status==="aprovado").length;
               const pe=orcamentos.filter(o=>o.status==="perdido").length;
               const tot=orcamentos.reduce((s,o)=>s+(o.value||0),0);
+              const totIPI=orcamentos.reduce((s,o)=>s+(o.valueComIPI||0),0);
+              const convRate=tot>0?Math.round(ap/(ab+ap+pe+.001)*100):0;
               return (
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"12px"}}>
-                  {[["Abertos",ab,"#378ADD"],["Aprovados",ap,"#1D9E75"],["Perdidos",pe,"#E24B4A"],["Total","R$ "+tot.toLocaleString("pt-BR"),"#FFAAAA"]].map(([l,v,c])=>(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:"8px",marginBottom:"12px"}}>
+                  {[["Abertos",ab,"#378ADD"],["Aprovados",ap,"#1D9E75"],["Perdidos",pe,"#E24B4A"],["Total s/ imp.","R$ "+(tot/1000).toFixed(0)+"k","var(--text-accent)"],["Taxa conv.",convRate+"%",convRate>=25?"#1D9E75":convRate>=15?"#EF9F27":"#E24B4A"]].map(([l,v,c])=>(
                     <div key={l} style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"8px 10px",textAlign:"center"}}>
                       <div style={{fontSize:"9px",color:"var(--text-secondary)",marginBottom:"3px"}}>{l}</div>
                       <div style={{fontSize:"15px",fontWeight:700,color:c}}>{v}</div>
@@ -1480,7 +1483,7 @@ function App() {
             <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"8px",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
                 <thead><tr style={{background:"var(--bg-card2)"}}>
-                  {["Nº Orç.","Cliente","Fornecedor","Valor","Data","Status","Opp vinculada","Arq.",""].map(h=>(
+                  {["Nº Orç.","Cliente","Fornecedor","Valor s/ imp.","c/ IPI","Data","Status","Arquivo",""].map(h=>(
                     <th key={h} style={{padding:"7px 9px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)"}}>{h}</th>
                   ))}
                 </tr></thead>
@@ -1490,14 +1493,15 @@ function App() {
                     const sc={"aberto":"#378ADD","aprovado":"#1D9E75","perdido":"#E24B4A","em_negociacao":"#EF9F27","aguardando":"#888780"}[o.status]||"#888";
                     const linkedOpp = opps.find(op=>op.id===o.oppId);
                     return (
-                      <tr key={o.id} style={{borderBottom:"1px solid var(--border2)"}}>
+                      <tr key={o.id} onClick={()=>setSelOrc(selOrc?.id===o.id?null:o)} style={{borderBottom:"1px solid var(--border2)",cursor:"pointer",background:selOrc?.id===o.id?"rgba(140,26,26,0.08)":"transparent"}}>
                         <td style={{padding:"7px 9px",color:"var(--text-accent)",fontWeight:700}}>{o.number}</td>
                         <td style={{padding:"7px 9px",color:"var(--text-primary)"}}>{o.client}</td>
                         <td style={{padding:"7px 9px",color:"var(--text-secondary)"}}>{o.supplier||"—"}</td>
-                        <td style={{padding:"7px 9px",color:"var(--text-green)"}}>R$ {(o.value||0).toLocaleString("pt-BR")}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-green)",fontWeight:600}}>R$ {(o.value||0).toLocaleString("pt-BR")}</td>
+                        <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px"}}>{o.valueComIPI?("R$ "+(o.valueComIPI||0).toLocaleString("pt-BR")):"—"}</td>
                         <td style={{padding:"7px 9px",color:"var(--text-secondary)"}}>{o.date||"—"}</td>
                         <td style={{padding:"7px 9px"}}><span style={{fontSize:"10px",padding:"2px 7px",borderRadius:"8px",background:sc+"22",color:sc,fontWeight:600}}>{o.status}</span></td>
-                        <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"11px",maxWidth:"120px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{linkedOpp?linkedOpp.title:"—"}</td>
+
                         <td style={{padding:"7px 9px",color:"var(--text-secondary)",fontSize:"10px"}}>{o.fileName||"—"}</td>
                         <td style={{padding:"7px 9px"}}><button onClick={()=>delOrcamento(o.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#5A3030",fontSize:"13px"}}>✕</button></td>
                       </tr>
@@ -1506,11 +1510,67 @@ function App() {
                 </tbody>
               </table>
             </div>
+            {/* PAINEL DETALHE ORÇAMENTO */}
+            {selOrc && (
+              <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"16px",marginTop:"12px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"12px"}}>
+                  <div>
+                    <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)"}}>{selOrc.number}</div>
+                    <div style={{fontSize:"12px",color:"var(--text-secondary)",marginTop:"2px"}}>{selOrc.client} · {selOrc.supplier} · {selOrc.contact}</div>
+                  </div>
+                  <div style={{display:"flex",gap:"16px",alignItems:"center"}}>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>Sem imposto (pipeline)</div>
+                      <div style={{fontSize:"18px",fontWeight:700,color:"var(--text-green)"}}>R$ {(selOrc.value||0).toLocaleString("pt-BR")}</div>
+                    </div>
+                    {selOrc.valueComIPI>0&&<div style={{textAlign:"right"}}>
+                      <div style={{fontSize:"11px",color:"var(--text-secondary)"}}>Com IPI</div>
+                      <div style={{fontSize:"15px",fontWeight:600,color:"var(--text-secondary)"}}>R$ {selOrc.valueComIPI.toLocaleString("pt-BR")}</div>
+                    </div>}
+                    <button onClick={()=>setSelOrc(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+                  </div>
+                </div>
+                {selOrc.notes&&<div style={{fontSize:"11px",color:"var(--text-secondary)",background:"var(--bg-card2)",borderRadius:"6px",padding:"8px 10px",marginBottom:"12px"}}>{selOrc.notes}</div>}
+                {/* Itens */}
+                {selOrc.items&&selOrc.items.length>0&&(
+                  <div style={{overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:"11px",minWidth:"800px"}}>
+                      <thead><tr style={{background:"var(--bg-card2)"}}>
+                        {["Item","Qtd","Código","Sigma","Descrição","Entrega","Preço Unit","Val. Liq Unit","Total Liq"].map(h=>(
+                          <th key={h} style={{padding:"6px 8px",textAlign:"left",color:"var(--text-secondary)",fontWeight:600,fontSize:"10px",borderBottom:"1px solid var(--border2)",whiteSpace:"nowrap"}}>{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>
+                        {selOrc.items.map((it,i)=>(
+                          <tr key={i} style={{borderBottom:"1px solid var(--border2)"}}>
+                            <td style={{padding:"5px 8px",color:"var(--text-secondary)"}}>{it.item}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-primary)",fontWeight:600,textAlign:"center"}}>{it.qtd}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-accent)",fontWeight:600}}>{it.codigo}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-secondary)",fontSize:"10px"}}>{it.sigma}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-primary)",maxWidth:"280px"}}>{it.desc}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-secondary)",whiteSpace:"nowrap",fontSize:"10px"}}>{it.entrega}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-secondary)",textAlign:"right",whiteSpace:"nowrap"}}>R$ {(it.preco_unit||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                            <td style={{padding:"5px 8px",color:"#1D9E75",fontWeight:600,textAlign:"right",whiteSpace:"nowrap",background:"rgba(146,208,80,0.08)"}}>R$ {(it.val_liq_unit||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                            <td style={{padding:"5px 8px",color:"var(--text-accent)",fontWeight:700,textAlign:"right",whiteSpace:"nowrap"}}>R$ {(it.total_liq||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                          </tr>
+                        ))}
+                        <tr style={{borderTop:"2px solid var(--border)",background:"var(--bg-card2)"}}>
+                          <td colSpan={7} style={{padding:"6px 8px",fontWeight:700,color:"var(--text-primary)"}}>TOTAL</td>
+                          <td style={{padding:"6px 8px",fontWeight:700,color:"#1D9E75",textAlign:"right",background:"rgba(146,208,80,0.08)"}}>—</td>
+                          <td style={{padding:"6px 8px",fontWeight:700,color:"var(--text-accent)",textAlign:"right"}}>R$ {(selOrc.value||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {orcModal && (
               <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50}}>
                 <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"10px",padding:"20px",width:"380px",maxWidth:"90vw",maxHeight:"85vh",overflowY:"auto"}}>
                   <div style={{fontSize:"14px",fontWeight:600,marginBottom:"14px",color:"var(--text-primary)"}}>Novo orçamento</div>
-                  {[["number","Número do orçamento *","text"],["client","Cliente *","text"],["contact","Contato","text"],["supplier","Fornecedor","text"],["value","Valor R$","number"],["date","Data","date"],["fileName","Nome do arquivo Excel","text"]].map(([k,lb,t])=>(
+                  {[["number","Número do orçamento *","text"],["client","Cliente *","text"],["contact","Contato","text"],["supplier","Fornecedor","text"],["value","Valor sem imposto (pipeline) R$ *","number"],["valueComIPI","Valor com IPI R$","number"],["valueComICMS","Valor com ICMS R$","number"],["date","Data","date"],["fileName","Arquivo de referência","text"]].map(([k,lb,t])=>(
                     <div key={k} style={{marginBottom:"8px"}}>
                       <label style={{fontSize:"10px",color:"var(--text-secondary)",display:"block",marginBottom:"3px"}}>{lb}</label>
                       <input type={t} value={orcForm[k]||""} onChange={e=>setOrcForm({...orcForm,[k]:e.target.value})} style={inp}/>
