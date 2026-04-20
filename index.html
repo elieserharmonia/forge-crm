@@ -66,11 +66,14 @@ const SYS_PROMPT = `Você é o Gestor Comercial IA de uma empresa B2B industrial
 - Clientes: Caterpillar, Honda, Hyundai, GWM Brasil, Rumo, Baldan, Electrolux, Jacto, Brudden, MP Agro, Piccin
 
 Metodologias dominadas:
-- 3S+M (Triplo SM): Suspect → Suspect Qualificado → Solução → Manutenção com 7 passos de compra/venda
-- 5W2H para planejamento de ações comerciais
-- Kaizen aplicado ao desenvolvimento e fidelização de clientes
+- 3S+M: Suspect → Suspect Qualificado → Solução → Manutenção com 7 passos de compra/venda
+- 5W2H para planejamento de visitas e ações comerciais
+- Priorização por valor × estágio × urgência × relacionamento
 
-Responda em português brasileiro. Seja direto e prático. Máx 180 palavras. Use bullets para listar ações.`;
+Quando sugerir visita: diga O QUÊ oferecer, QUAL argumento técnico usar e QUEM contatar.
+Para follow-ups: sugira mensagem ou ação concreta com data.
+Para planejamento de semana: organize por dia, cliente e objetivo claro.
+Responda em português brasileiro. Seja direto e prático. Máx 200 palavras (planejamento: até 400). Use bullets.`;
 
 function loadData() {
   try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
@@ -98,7 +101,7 @@ function App() {
   const [showKey, setShowKey]     = useState(false);
   const [keyDraft, setKeyDraft]   = useState("");
   const [newModal, setNewModal]   = useState(false);
-  const [form, setForm]           = useState({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1,negType:"D"});
+  const [form, setForm]           = useState({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",nextTime:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1,negType:"D"});
   const aiEnd = useRef(null);
 
   // PERFIL
@@ -111,11 +114,11 @@ function App() {
   // BUDGET
   const BUDGET_KEY = "crm_budget_v2";
   const CUR_YEAR = new Date().getFullYear();
-  const emptyBudgetForm = {type:"supplier",supplier:"",client:"",targetAnual:0,target1s:0,target2s:0,realized1s:0,realized2s:0,realizedManual:0,year:CUR_YEAR,notes:""};
+  const emptyBudgetForm = {type:"client",supplier:"",client:"",targetAnual:0,target1s:0,target2s:0,realized1s:0,realized2s:0,realizedManual:0,year:CUR_YEAR,notes:""};
   const [budgets, setBudgets] = useState(() => { try { const r=localStorage.getItem(BUDGET_KEY); return r?JSON.parse(r):[{"id": "b1", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b2", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b3", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HYUNDAI", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b4", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "JACTO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b5", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b6", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b7", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "JACTO", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b8", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "RUMO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b9", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "EMBRAER", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b10", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b11", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b12", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b13", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b14", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HONDA", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b15", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HYUNDAI", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b16", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b17", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "HYUNDAI", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b18", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b19", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "RUMO", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b20", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "EMBRAER", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b21", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b22", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "CATERPILLAR", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b23", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HONDA", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b24", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b25", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b26", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b27", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b28", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b29", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "CATERPILLAR", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b30", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "JACTO", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b31", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "RUMO", "targetAnual": 200000, "target1s": 100000, "target2s": 100000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b32", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "EMBRAER", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b33", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b34", "type": "both", "negType": "TT", "supplier": "ENERPAC", "client": "RUMO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b35", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b36", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b37", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b38", "type": "both", "negType": "TT", "supplier": "STAHLWILLE", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b39", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "CATERPILLAR", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b40", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b41", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b42", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "JACTO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b43", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b44", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b45", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b46", "type": "both", "negType": "TT", "supplier": "3arm", "client": "CATERPILLAR", "targetAnual": 600000, "target1s": 300000, "target2s": 300000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b47", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b48", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b49", "type": "both", "negType": "TT", "supplier": "3arm", "client": "RUMO", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b50", "type": "both", "negType": "TT", "supplier": "3arm", "client": "EMBRAER", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b51", "type": "both", "negType": "REP", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}]; } catch { return [{"id": "b1", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b2", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b3", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "HYUNDAI", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b4", "type": "both", "negType": "TT", "supplier": "BOSCH IW", "client": "JACTO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b5", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b6", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b7", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "JACTO", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b8", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "RUMO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b9", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "EMBRAER", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b10", "type": "both", "negType": "TT", "supplier": "BOSCH PT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b11", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b12", "type": "both", "negType": "TT", "supplier": "HS-T", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b13", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "CATERPILLAR", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b14", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HONDA", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b15", "type": "both", "negType": "TT", "supplier": "LÜBBERING", "client": "HYUNDAI", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b16", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "CATERPILLAR", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b17", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "HYUNDAI", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b18", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b19", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "RUMO", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b20", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "EMBRAER", "targetAnual": 30000, "target1s": 15000, "target2s": 15000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b21", "type": "both", "negType": "TT", "supplier": "MILWAUKEE", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b22", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "CATERPILLAR", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b23", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HONDA", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b24", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b25", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "JACTO", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b26", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b27", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b28", "type": "both", "negType": "TT", "supplier": "MOMENTO", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 5000, "target1s": 2500, "target2s": 2500, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b29", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "CATERPILLAR", "targetAnual": 60000, "target1s": 30000, "target2s": 30000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b30", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "JACTO", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b31", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "RUMO", "targetAnual": 200000, "target1s": 100000, "target2s": 100000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b32", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "EMBRAER", "targetAnual": 80000, "target1s": 40000, "target2s": 40000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b33", "type": "both", "negType": "TT", "supplier": "NORBAR", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b34", "type": "both", "negType": "TT", "supplier": "ENERPAC", "client": "RUMO", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b35", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b36", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b37", "type": "both", "negType": "TT", "supplier": "PANASONIC", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b38", "type": "both", "negType": "TT", "supplier": "STAHLWILLE", "client": "EMBRAER", "targetAnual": 50000, "target1s": 25000, "target2s": 25000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b39", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "CATERPILLAR", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b40", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HONDA", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b41", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "HYUNDAI", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b42", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "JACTO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b43", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "RUMO", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b44", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "EMBRAER", "targetAnual": 10000, "target1s": 5000, "target2s": 5000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b45", "type": "both", "negType": "TT", "supplier": "STURTEVANT", "client": "IMPLEMENTOS AGRÍCOLAS", "targetAnual": 20000, "target1s": 10000, "target2s": 10000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b46", "type": "both", "negType": "TT", "supplier": "3arm", "client": "CATERPILLAR", "targetAnual": 600000, "target1s": 300000, "target2s": 300000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b47", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HONDA", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b48", "type": "both", "negType": "TT", "supplier": "3arm", "client": "HYUNDAI", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b49", "type": "both", "negType": "TT", "supplier": "3arm", "client": "RUMO", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b50", "type": "both", "negType": "TT", "supplier": "3arm", "client": "EMBRAER", "targetAnual": 150000, "target1s": 75000, "target2s": 75000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}, {"id": "b51", "type": "both", "negType": "REP", "supplier": "BOSCH IW", "client": "CATERPILLAR", "targetAnual": 100000, "target1s": 50000, "target2s": 50000, "realized1s": 0, "realized2s": 0, "realizedManual": 0, "year": 2026, "notes": ""}]; } });
   const [budgetModal, setBudgetModal] = useState(false);
   const [budgetForm, setBudgetForm] = useState(emptyBudgetForm);
-  const [budgetView, setBudgetView] = useState("supplier"); // supplier | client | overview
+  const [budgetView, setBudgetView] = useState("client"); // supplier | client | overview
   function saveBudgets(b){ setBudgets(b); try{ localStorage.setItem(BUDGET_KEY,JSON.stringify(b)); }catch{}; }
   function addBudget(){
     if(!budgetForm.supplier&&!budgetForm.client) return;
@@ -162,6 +165,90 @@ function App() {
   function saveProjetos(p){ setProjetos(p); try{ localStorage.setItem(PROJ_KEY,JSON.stringify(p)); }catch{}; }
   function addProjeto(){ if(!projForm.name) return; saveProjetos([...projetos,{...projForm,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}]); setProjForm({name:"",client:"",type:"braco_gravidade",description:"",dimensions:"",material:"",status:"em_andamento",deadline:"",engResp:"",notes:"",drawingRef:""}); setProjModal(false); }
   function delProjeto(id){ saveProjetos(projetos.filter(p=>p.id!==id)); }
+
+  // TAREFAS & NOTIFICAÇÕES
+  const TASKS_KEY = "crm_tasks_v1";
+  const NOTIF_KEY = "crm_notif_v1";
+  const emptyTask = {title:"",company:"",oppId:"",date:"",time:"",priority:"media",notes:"",done:false};
+  const [tasks, setTasks] = useState(()=>{ try{ const r=localStorage.getItem(TASKS_KEY); return r?JSON.parse(r):[]; }catch{ return []; }});
+  const [taskModal, setTaskModal] = useState(false);
+  const [taskForm, setTaskForm] = useState(emptyTask);
+  const [notifSettings, setNotifSettings] = useState(()=>{ try{ const r=localStorage.getItem(NOTIF_KEY); return r?JSON.parse(r):{enabled:true,minutesBefore:60,bellEnabled:true}; }catch{ return {enabled:true,minutesBefore:60,bellEnabled:true}; }});
+  const [bellAlert, setBellAlert] = useState(null);
+  const [taskSearch, setTaskSearch] = useState("");
+  function saveTasks(t){ setTasks(t); try{ localStorage.setItem(TASKS_KEY,JSON.stringify(t)); }catch{}; }
+  function saveNotifSettings(n){ setNotifSettings(n); try{ localStorage.setItem(NOTIF_KEY,JSON.stringify(n)); }catch{}; }
+  function addTask(){ if(!taskForm.title) return; saveTasks([...tasks,{...taskForm,id:Date.now().toString(),createdAt:new Date().toISOString().slice(0,10)}]); setTaskForm(emptyTask); setTaskModal(false); }
+  function delTask(id){ saveTasks(tasks.filter(t=>t.id!==id)); }
+  function toggleTaskDone(id){ saveTasks(tasks.map(t=>t.id===id?{...t,done:!t.done}:t)); }
+
+  // Verificar tarefas próximas (campainha)
+  useEffect(()=>{
+    if(!notifSettings.bellEnabled) return;
+    const interval = setInterval(()=>{
+      const now = new Date();
+      const pending = tasks.filter(t=>!t.done&&t.date&&t.time);
+      for(const t of pending){
+        const dt = new Date(`${t.date}T${t.time}`);
+        const diff = (dt-now)/60000; // minutos
+        if(diff>0 && diff<=notifSettings.minutesBefore){
+          setBellAlert(t);
+          // Toca som via Web Audio API
+          try{
+            const ctx = new (window.AudioContext||window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value=880; osc.type="sine";
+            gain.gain.setValueAtTime(0.3,ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.5);
+            osc.start(); osc.stop(ctx.currentTime+1.5);
+          }catch(e){}
+          break;
+        }
+      }
+    }, 30000); // checa a cada 30s
+    return ()=>clearInterval(interval);
+  }, [tasks, notifSettings]);
+
+  // Gerar link mailto para Outlook com tarefas do dia
+  function gerarEmailDia(){
+    const today2 = new Date().toISOString().slice(0,10);
+    const tasksDia = tasks.filter(t=>t.date===today2&&!t.done);
+    if(tasksDia.length===0){ alert("Nenhuma tarefa para hoje."); return; }
+    const corpo = tasksDia.map(t=>`• ${t.time||"—"} | ${t.title} — ${t.company||""}
+  ${t.notes||""}`).join("
+
+");
+    const subject = `Tarefas do dia — ${today2}`;
+    const emailAddr = profile.email||"";
+    window.location.href = `mailto:${emailAddr}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("Bom dia!
+
+Suas tarefas de hoje:
+
+"+corpo)}`;
+  }
+
+  // Gerar link .ics para importar no Outlook/Calendar
+  function gerarICS(task){
+    if(!task.date||!task.time){ alert("A tarefa precisa de data e horário para exportar ao Outlook."); return; }
+    const dt = task.date.replace(/-/g,"")+"T"+task.time.replace(/:/g,"")+"00";
+    const dtEnd = task.date.replace(/-/g,"")+"T"+String(Number(task.time.replace(":",""))+100).padStart(4,"0")+"00";
+    const ics = [
+      "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SinueloCRM//PT",
+      "BEGIN:VEVENT",
+      `DTSTART:${dt}`,`DTEND:${dtEnd}`,
+      `SUMMARY:${task.title} — ${task.company||""}`,
+      `DESCRIPTION:${task.notes||""}`,
+      "END:VEVENT","END:VCALENDAR"
+    ].join("
+");
+    const blob = new Blob([ics],{type:"text/calendar"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download=`tarefa_${task.id}.ics`; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // CLIENTES DINÂMICOS
   const CLIENTS_KEY = "crm_clients_v2";
@@ -306,7 +393,7 @@ function App() {
     const o = {...form, id:Date.now().toString(), value:Number(form.value)||0, history:[], createdAt:new Date().toISOString().slice(0,10)};
     setAndSave([...opps, o]);
     setNewModal(false);
-    setForm({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1,negType:"D"});
+    setForm({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",nextTime:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1,negType:"D"});
   }
 
   function delOpp(id) { setAndSave(opps.filter(o=>o.id!==id)); setSel(null); }
@@ -402,8 +489,11 @@ function App() {
           <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",fontWeight:600}}>3S+M</span>
         </div>
         <div style={{display:"flex",gap:"4px"}}>
-          {[["kanban","Pipeline/Forecast"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"]].map(([v,l])=>(
-            <button key={v} onClick={()=>{setView(v);if(v!=="kanban")setSel(null);}} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400}}>{l}</button>
+          {[["kanban","Pipeline/Forecast"],["tasks","Tarefas"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"]].map(([v,l])=>(
+            <button key={v} onClick={()=>{setView(v);if(v!=="kanban")setSel(null);}} style={{padding:"5px 11px",fontSize:"12px",borderRadius:"6px",border:"1px solid",borderColor:view===v?"#8C1A1A":"var(--border)",background:view===v?"rgba(140,26,26,0.25)":"transparent",color:view===v?"#FFAAAA":"#B0A0A0",cursor:"pointer",fontWeight:view===v?600:400,position:"relative"}}>
+              {l}
+              {v==="tasks"&&tasks.filter(t=>!t.done&&t.date===today).length>0&&<span style={{position:"absolute",top:"-4px",right:"-4px",background:"#E24B4A",color:"#fff",borderRadius:"50%",width:"14px",height:"14px",fontSize:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{tasks.filter(t=>!t.done&&t.date===today).length}</span>}
+            </button>
           ))}
         </div>
         <button onClick={()=>setNewModal(true)} style={btn("#E1F5EE","#085041","#0F6E56")}>+ Nova oportunidade</button>
@@ -642,6 +732,160 @@ function App() {
         {/* FUNIL */}
 
 
+
+        {/* ===== TAREFAS ===== */}
+        {view==="tasks" && (
+          <div style={{flex:1,minWidth:0}}>
+            {/* Toolbar */}
+            <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"12px",flexWrap:"wrap"}}>
+              <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)",flex:1}}>
+                Tarefas
+                {tasks.filter(t=>!t.done&&t.date===today).length>0&&
+                  <span style={{marginLeft:"8px",fontSize:"11px",padding:"2px 8px",borderRadius:"8px",background:"rgba(226,75,74,0.15)",color:"#E24B4A",fontWeight:600}}>{tasks.filter(t=>!t.done&&t.date===today).length} para hoje</span>}
+              </div>
+              <input value={taskSearch} onChange={e=>setTaskSearch(e.target.value)} placeholder="Buscar tarefa..."
+                style={{...inp,maxWidth:"200px"}}/>
+              <button onClick={gerarEmailDia} style={{padding:"5px 12px",fontSize:"11px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}} title="Enviar e-mail com tarefas do dia para o Outlook">📧 E-mail do dia</button>
+              <button onClick={()=>{setTaskForm(emptyTask);setTaskModal(true);}} style={{padding:"5px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",cursor:"pointer",fontWeight:600}}>+ Nova tarefa</button>
+            </div>
+
+            {/* Alerta campaninha */}
+            {bellAlert&&(
+              <div style={{background:"rgba(239,159,39,0.15)",border:"1px solid #EF9F27",borderRadius:"8px",padding:"10px 14px",marginBottom:"12px",display:"flex",alignItems:"center",gap:"10px"}}>
+                <span style={{fontSize:"20px"}}>🔔</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:"13px",fontWeight:600,color:"#EF9F27"}}>Tarefa em {notifSettings.minutesBefore} min ou menos!</div>
+                  <div style={{fontSize:"12px",color:"var(--text-primary)"}}>{bellAlert.title} — {bellAlert.company} · {bellAlert.date} {bellAlert.time}</div>
+                </div>
+                <button onClick={()=>setBellAlert(null)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px"}}>✕</button>
+              </div>
+            )}
+
+            {/* Configurações de notificação */}
+            <div style={{background:"var(--bg-card2)",borderRadius:"8px",padding:"10px 14px",marginBottom:"12px",display:"flex",gap:"16px",alignItems:"center",flexWrap:"wrap"}}>
+              <span style={{fontSize:"11px",color:"var(--text-secondary)",fontWeight:600}}>🔔 Notificações:</span>
+              <label style={{display:"flex",alignItems:"center",gap:"5px",fontSize:"11px",color:"var(--text-secondary)",cursor:"pointer"}}>
+                <input type="checkbox" checked={notifSettings.bellEnabled} onChange={e=>saveNotifSettings({...notifSettings,bellEnabled:e.target.checked})}/>
+                Campaninha ativa
+              </label>
+              <label style={{display:"flex",alignItems:"center",gap:"5px",fontSize:"11px",color:"var(--text-secondary)"}}>
+                Alertar com
+                <input type="number" value={notifSettings.minutesBefore} onChange={e=>saveNotifSettings({...notifSettings,minutesBefore:Number(e.target.value)||60})}
+                  style={{...inp,width:"52px",fontSize:"11px",padding:"2px 6px"}} min="5" max="1440"/>
+                min de antecedência
+              </label>
+            </div>
+
+            {/* Lista de tarefas */}
+            {(()=>{
+              const tFiltered = tasks
+                .filter(t=>!taskSearch||t.title.toLowerCase().includes(taskSearch.toLowerCase())||t.company?.toLowerCase().includes(taskSearch.toLowerCase()))
+                .sort((a,b)=>{
+                  if(a.done!==b.done) return a.done?1:-1;
+                  const da=(a.date||"9999")+(a.time||"");
+                  const db=(b.date||"9999")+(b.time||"");
+                  return da.localeCompare(db);
+                });
+              const groups = {};
+              tFiltered.forEach(t=>{
+                const key = t.done?"✓ Concluídas":(t.date===today?"📅 Hoje":t.date<today&&t.date?"⚠ Atrasadas":"📆 Próximas");
+                if(!groups[key]) groups[key]=[];
+                groups[key].push(t);
+              });
+              if(tFiltered.length===0) return <div style={{textAlign:"center",padding:"40px",color:"var(--text-muted)",fontSize:"13px"}}>Nenhuma tarefa cadastrada. Clique em "+ Nova tarefa" para começar.</div>;
+              return Object.entries(groups).map(([grp,gtasks])=>(
+                <div key={grp} style={{marginBottom:"14px"}}>
+                  <div style={{fontSize:"11px",fontWeight:700,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"6px",paddingBottom:"4px",borderBottom:"1px solid var(--border2)"}}>{grp} ({gtasks.length})</div>
+                  {gtasks.map(t=>{
+                    const isLate = t.date&&t.date<today&&!t.done;
+                    const isToday2 = t.date===today;
+                    const priC = {alta:"#E24B4A",media:"#EF9F27",baixa:"#1D9E75"}[t.priority]||"#888";
+                    const opp = opps.find(o=>o.id===t.oppId);
+                    return (
+                      <div key={t.id} style={{background:"var(--bg-card)",border:`1px solid ${isLate?"#E24B4A33":isToday2?"#EF9F2733":"var(--border)"}`,borderLeft:`3px solid ${isLate?"#E24B4A":isToday2?"#EF9F27":priC}`,borderRadius:"8px",padding:"10px 12px",marginBottom:"6px",opacity:t.done?.6:1}}>
+                        <div style={{display:"flex",alignItems:"flex-start",gap:"10px"}}>
+                          <input type="checkbox" checked={t.done} onChange={()=>toggleTaskDone(t.id)} style={{marginTop:"2px",cursor:"pointer",flexShrink:0}}/>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"2px",flexWrap:"wrap"}}>
+                              <span style={{fontSize:"13px",fontWeight:600,color:t.done?"var(--text-muted)":"var(--text-primary)",textDecoration:t.done?"line-through":"none"}}>{t.title}</span>
+                              <span style={{fontSize:"10px",padding:"1px 6px",borderRadius:"6px",background:priC+"22",color:priC,fontWeight:600}}>{t.priority}</span>
+                              {isLate&&<span style={{fontSize:"10px",color:"#E24B4A",fontWeight:600}}>ATRASADO</span>}
+                            </div>
+                            <div style={{display:"flex",gap:"10px",fontSize:"11px",color:"var(--text-secondary)",flexWrap:"wrap"}}>
+                              {t.company&&<span>🏭 {t.company}</span>}
+                              {t.date&&<span>📅 {t.date}{t.time?" "+t.time:""}</span>}
+                              {opp&&<span style={{color:"var(--text-blue)",cursor:"pointer"}} onClick={()=>{setSel(opp);setView("kanban");}}>🔗 {opp.title.slice(0,30)}</span>}
+                            </div>
+                            {t.notes&&<div style={{fontSize:"11px",color:"var(--text-secondary)",marginTop:"4px",lineHeight:1.4}}>{t.notes}</div>}
+                          </div>
+                          <div style={{display:"flex",gap:"4px",flexShrink:0}}>
+                            <button onClick={()=>gerarICS(t)} title="Exportar para Outlook (.ics)" style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-blue)",fontSize:"13px",padding:"2px"}}>📆</button>
+                            <button onClick={()=>delTask(t.id)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"13px",padding:"2px"}}>✕</button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+
+            {/* MODAL NOVA TAREFA */}
+            {taskModal&&(
+              <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60}}>
+                <div style={{background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"12px",padding:"20px",width:"420px",maxWidth:"95vw",maxHeight:"90vh",overflowY:"auto"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                    <div style={{fontSize:"14px",fontWeight:700,color:"var(--text-primary)"}}>Nova tarefa</div>
+                    <button onClick={()=>setTaskModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Título *</label>
+                    <input value={taskForm.title} onChange={e=>setTaskForm({...taskForm,title:e.target.value})} style={inp} placeholder="Ex: Visita Caterpillar, Enviar proposta Norbar..."/>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Cliente / Empresa</label>
+                    <input value={taskForm.company} onChange={e=>setTaskForm({...taskForm,company:e.target.value})} style={inp} placeholder="Ex: Caterpillar"/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
+                    <div>
+                      <label style={lbl}>Data</label>
+                      <input type="date" value={taskForm.date} onChange={e=>setTaskForm({...taskForm,date:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Horário</label>
+                      <input type="time" value={taskForm.time} onChange={e=>setTaskForm({...taskForm,time:e.target.value})} style={inp}/>
+                    </div>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Vincular oportunidade</label>
+                    <select value={taskForm.oppId} onChange={e=>setTaskForm({...taskForm,oppId:e.target.value,company:e.target.value?opps.find(o=>o.id===e.target.value)?.company||taskForm.company:taskForm.company})} style={{...inp}}>
+                      <option value="">— Nenhuma —</option>
+                      {opps.filter(o=>o.stage!=="fechado").map(o=><option key={o.id} value={o.id}>{o.company} · {o.title.slice(0,35)}</option>)}
+                    </select>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Prioridade</label>
+                    <div style={{display:"flex",gap:"6px"}}>
+                      {[["alta","Alta","#E24B4A"],["media","Média","#EF9F27"],["baixa","Baixa","#1D9E75"]].map(([v,l,c])=>(
+                        <button key={v} onClick={()=>setTaskForm({...taskForm,priority:v})}
+                          style={{flex:1,padding:"6px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${taskForm.priority===v?c:"var(--border)"}`,background:taskForm.priority===v?c+"22":"transparent",color:taskForm.priority===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:taskForm.priority===v?600:400}}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{marginBottom:"14px"}}>
+                    <label style={lbl}>Notas / O que oferecer</label>
+                    <textarea value={taskForm.notes} onChange={e=>setTaskForm({...taskForm,notes:e.target.value})} style={{...inp,height:"60px"}} placeholder="Produtos a apresentar, contexto, objetivo da visita..."/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={addTask} disabled={!taskForm.title}
+                      style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:taskForm.title?"#8C1A1A":"#4A2A2A",color:taskForm.title?"#FFD0D0":"#7A5050",cursor:taskForm.title?"pointer":"default",fontWeight:600}}>Salvar tarefa</button>
+                    <button onClick={()=>setTaskModal(false)} style={{padding:"10px 14px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ===== CLIENTES ===== */}
         {view==="clients" && (
@@ -884,7 +1128,7 @@ function App() {
             <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"14px",flexWrap:"wrap"}}>
               <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)",flex:1}}>Budget {CUR_YEAR}</div>
               <div style={{display:"flex",gap:"2px",background:"rgba(128,128,128,0.12)",borderRadius:"8px",padding:"3px"}}>
-                {[["matrix","Matriz"],["supplier","Fornecedor"],["client","Cliente"]].map(([v,l])=>(
+                {[["client","Por Cliente"],["supplier","Por Fornecedor"],["matrix","Matriz"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setBudgetView(v)} style={{padding:"4px 12px",fontSize:"11px",borderRadius:"6px",border:"none",cursor:"pointer",background:budgetView===v?"#8C1A1A":"transparent",color:budgetView===v?"#fff":"var(--text-secondary)",fontWeight:budgetView===v?700:400,whiteSpace:"nowrap"}}>{l}</button>
                 ))}
               </div>
@@ -1437,6 +1681,7 @@ function App() {
               <div style={{display:"flex",gap:"4px",marginBottom:"10px"}}>
                 <button onClick={()=>move(sel.id,-1)} style={{flex:1,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",color:"var(--text-secondary)"}}>← Recuar</button>
                 <button onClick={()=>openVisita(sel)} style={{flex:2,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid #185FA5",background:"rgba(24,95,165,0.12)",cursor:"pointer",color:"#185FA5",fontWeight:700}}>📝 + Registrar visita</button>
+                <button onClick={()=>{setTaskForm({...emptyTask,company:sel.company,oppId:sel.id,title:"Visita — "+sel.company,notes:sel.nextAction||""});setTaskModal(true);setView("tasks");}} style={{flex:2,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid #EF9F27",background:"rgba(239,159,39,0.12)",cursor:"pointer",color:"#EF9F27",fontWeight:700}}>📅 + Tarefa</button>
                 <button onClick={()=>move(sel.id,1)} style={{flex:1,padding:"4px",fontSize:"10px",borderRadius:"5px",border:"1px solid #8C1A1A",background:"rgba(140,26,26,0.2)",cursor:"pointer",color:"var(--text-accent)",fontWeight:600}}>Avançar →</button>
               </div>
               {/* Abas internas */}
@@ -1471,20 +1716,28 @@ function App() {
                       ))}
                     </div>
                   </div>
-                  {[
-                    {label:"Próxima ação", key:"nextAction", type:"textarea"},
-                    {label:"Data follow-up", key:"nextDate", type:"date"},
-                    {label:"Valor R$", key:"value", type:"number"},
-                    {label:"Notas", key:"notes", type:"textarea"},
-                  ].map(f=>(
-                    <div key={f.key} style={{marginBottom:"8px"}}>
-                      <label style={lbl}>{f.label}</label>
-                      {f.type==="textarea"
-                        ? <textarea value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:e.target.value})} style={{...inp,height:f.key==="notes"?"72px":"46px"}}/>
-                        : <input type={f.type} value={sel[f.key]||""} onChange={e=>updateOpp({...sel,[f.key]:f.type==="number"?Number(e.target.value):e.target.value})} style={inp}/>
-                      }
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Próxima ação</label>
+                    <textarea value={sel.nextAction||""} onChange={e=>updateOpp({...sel,nextAction:e.target.value})} style={{...inp,height:"46px"}}/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px",marginBottom:"8px"}}>
+                    <div>
+                      <label style={lbl}>Data</label>
+                      <input type="date" value={sel.nextDate||""} onChange={e=>updateOpp({...sel,nextDate:e.target.value})} style={inp}/>
                     </div>
-                  ))}
+                    <div>
+                      <label style={lbl}>Horário</label>
+                      <input type="time" value={sel.nextTime||""} onChange={e=>updateOpp({...sel,nextTime:e.target.value})} style={inp}/>
+                    </div>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Valor R$</label>
+                    <input type="number" value={sel.value||""} onChange={e=>updateOpp({...sel,value:Number(e.target.value)})} style={inp}/>
+                  </div>
+                  <div style={{marginBottom:"8px"}}>
+                    <label style={lbl}>Notas</label>
+                    <textarea value={sel.notes||""} onChange={e=>updateOpp({...sel,notes:e.target.value})} style={{...inp,height:"72px"}}/>
+                  </div>
                   <div style={{marginBottom:"12px"}}>
                     <label style={lbl}>Prioridade</label>
                     <div style={{display:"flex",gap:"4px"}}>
@@ -1576,11 +1829,25 @@ function App() {
       {/* PAINEL IA */}
       {aiOpen && (
         <div style={{position:"fixed",bottom:0,right:"16px",width:"330px",background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"12px 12px 0 0",display:"flex",flexDirection:"column",maxHeight:"480px",boxShadow:"0 -4px 24px rgba(0,0,0,0.09)",zIndex:50}}>
-          <div style={{padding:"10px 14px",borderBottom:"1px solid #333",display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
-            <div style={{width:"24px",height:"24px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff",fontWeight:600,flexShrink:0}}>IA</div>
-            <span style={{fontSize:"13px",fontWeight:600,flex:1,color:"var(--text-primary)"}}>Gestor IA · 3S+M</span>
-            {sel && <span style={{fontSize:"11px",color:"#bbb",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"80px"}}>{sel.company}</span>}
-            <button onClick={()=>setAiOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#bbb",fontSize:"16px",lineHeight:1}}>✕</button>
+          <div style={{padding:"10px 14px",borderBottom:"1px solid var(--border2)",display:"flex",flexDirection:"column",gap:"8px",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <div style={{width:"26px",height:"26px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff",fontWeight:700,flexShrink:0}}>IA</div>
+              <span style={{fontSize:"13px",fontWeight:700,flex:1,color:"var(--text-primary)"}}>Gestor IA · 3S+M</span>
+              {sel&&<span style={{fontSize:"10px",color:"var(--text-accent)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"80px"}}>{sel.company}</span>}
+              <button onClick={()=>setAiOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px",lineHeight:1}}>✕</button>
+            </div>
+            {/* Atalhos de contexto */}
+            <div style={{display:"flex",gap:"4px",flexWrap:"wrap"}}>
+              {[
+                ["📅 Planejar semana", `Hoje é ${new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"})}. Tenho estas oportunidades em aberto: ${opps.filter(o=>o.stage!=="fechado").slice(0,12).map(o=>`${o.company}/${o.supplier}(${o.stage})`).join(", ")}. Com base na metodologia 3S+M, me ajude a priorizar a semana: quais clientes visitar, o que oferecer a cada um e qual o argumento comercial mais forte. Organize por dia da semana.`],
+                ["🎯 Priorizar hoje", `São ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}. Tarefas de hoje: ${tasks.filter(t=>!t.done&&t.date===today).map(t=>t.title+" ("+t.company+")").join(", ")||"nenhuma cadastrada"}. Oportunidades quentes: ${opps.filter(o=>["proposta","negociacao"].includes(o.stage)).map(o=>o.company+" - "+o.title.slice(0,30)).join("; ")||"nenhuma"}. O que devo focar agora?`],
+                ["💡 O que oferecer", sel?`Para ${sel.company} (${sel.title}, etapa ${sel.stage}), com base no histórico: ${sel.nextAction}. Qual produto/solução Sinuelo devo apresentar? Qual argumento técnico e comercial usar com ${sel.contact}? Use 3S+M.`:`Selecione uma oportunidade primeiro para análise específica.`],
+                ["📊 Pipeline crítico", `Analise meu pipeline atual. Oportunidades acima de R$50k: ${opps.filter(o=>o.value>50000&&o.stage!=="fechado").map(o=>`${o.company}(R$${(o.value/1000).toFixed(0)}k,${o.stage})`).join(", ")}. Quais estão em risco? O que fazer para avançar cada uma?`],
+              ].map(([label, prompt])=>(
+                <button key={label} onClick={()=>chat(prompt)}
+                  style={{fontSize:"9px",padding:"3px 7px",borderRadius:"5px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer",whiteSpace:"nowrap"}}>{label}</button>
+              ))}
+            </div>
           </div>
           <div style={{flex:1,overflowY:"auto",padding:"12px",display:"flex",flexDirection:"column",gap:"8px",background:"var(--bg-card2)"}}>
             {aiMsgs.map((m,i)=>(
