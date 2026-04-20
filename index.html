@@ -216,17 +216,10 @@ function App() {
     const today2 = new Date().toISOString().slice(0,10);
     const tasksDia = tasks.filter(t=>t.date===today2&&!t.done);
     if(tasksDia.length===0){ alert("Nenhuma tarefa para hoje."); return; }
-    const corpo = tasksDia.map(t=>`• ${t.time||"—"} | ${t.title} — ${t.company||""}
-  ${t.notes||""}`).join("
-
-");
-    const subject = `Tarefas do dia — ${today2}`;
+    const corpo = tasksDia.map(t=>"• "+(t.time||"—")+" | "+t.title+" — "+(t.company||"")+(t.notes?"\n  "+t.notes:"")).join("\n\n");
+    const subject = "Tarefas do dia — "+today2;
     const emailAddr = profile.email||"";
-    window.location.href = `mailto:${emailAddr}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("Bom dia!
-
-Suas tarefas de hoje:
-
-"+corpo)}`;
+    window.location.href = "mailto:"+emailAddr+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent("Bom dia!\n\nSuas tarefas de hoje:\n\n"+corpo);
   }
 
   // Gerar link .ics para importar no Outlook/Calendar
