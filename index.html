@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>CRM Industrial B2B · 3S+M</title>
+  <title>FORECAST-CRM · 3S+M</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -520,18 +520,72 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  function importData(e) {
+  async function importData(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const d = JSON.parse(ev.target.result);
-        if (Array.isArray(d)) { setAndSave(d); alert("Dados importados com sucesso!"); }
-        else alert("Formato inválido.");
-      } catch { alert("Arquivo inválido."); }
-    };
-    reader.readAsText(file);
+    const XLSX = window.XLSX;
+    if (!XLSX) { alert("Aguarde o carregamento do leitor de planilhas."); return; }
+    const fname = file.name.toLowerCase();
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data);
+    const sheetName = wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true});
+
+    // Detectar tipo de planilha pelo nome do arquivo e conteúdo
+    const isClientes = fname.includes("cadastro") || fname.includes("cliente") || sheetName.toLowerCase().includes("cliente");
+    const isForecast = fname.includes("forecast") || sheetName.toLowerCase().includes("forecast") || sheetName.toLowerCase().includes("pipeline");
+    const isBudget   = fname.includes("budget") || sheetName.toLowerCase().includes("budget");
+
+    if (isClientes) {
+      // Importar clientes — mesmo parser do botão dedicado
+      const dict = {};
+      for (let i=1; i<rows.length; i++) {
+        const row = rows[i]; if (!row || !row.length) continue;
+        const cliente=String(row[3]||"").trim(), apelido=String(row[4]||"").trim()||cliente;
+        if (!apelido) continue;
+        if (!dict[apelido]) dict[apelido]={alias:apelido,name:cliente,cnpj:String(row[0]||"").trim(),address:String(row[5]||"").trim(),cep:String(row[6]||"").trim(),city:String(row[7]||"").trim(),state:String(row[8]||"").trim(),region:String(row[9]||"").trim(),segment:String(row[10]||"").trim(),contacts:[]};
+        const contato=String(row[12]||"").trim();
+        if(contato) dict[apelido].contacts.push({name:contato,role:String(row[13]||"").trim(),tel:String(row[14]||"").trim(),cel:String(row[15]||"").trim(),email:String(row[16]||"").trim()});
+      }
+      const list = Object.values(dict);
+      saveClients(list);
+      alert(list.length+" clientes importados com sucesso!");
+    } else if (isForecast) {
+      // Importar forecast — colunas: NEGOCIAÇÃO|RESP.|CUSTOMER|SUPPLIER|DESCRIPTION|AMOUNT|UF|Confidence|...
+      const newOpps = [];
+      for (let i=1; i<rows.length; i++) {
+        const row = rows[i]; if (!row || !row.length || !row[2]) continue;
+        newOpps.push({
+          id: Date.now().toString()+i,
+          negType: String(row[0]||"D").trim(),
+          resp: String(row[1]||"").trim(),
+          company: String(row[2]||"").trim(),
+          supplier: String(row[3]||"").trim(),
+          title: String(row[4]||"").trim(),
+          value: Number(row[5])||0,
+          stage: "qualificacao",
+          priority: "media",
+          forecastColor: "none",
+          nextAction: String(row[12]||"").trim(),
+          nextDate: "", nextTime: "",
+          contact: String(row[13]||"").trim(),
+          notes: "",
+          months: {},
+          history: [], visitHistory: [],
+          createdAt: new Date().toISOString().slice(0,10)
+        });
+      }
+      if(window.confirm("Importar "+newOpps.length+" oportunidades? Isso substituirá o pipeline atual.")) {
+        setAndSave(newOpps);
+        alert(newOpps.length+" oportunidades importadas!");
+      }
+    } else {
+      alert("Planilha não reconhecida automaticamente.
+Nomeie o arquivo com 'clientes', 'forecast' ou 'budget' para importação automática.
+
+Arquivo: "+file.name);
+    }
     e.target.value="";
   }
 
@@ -596,11 +650,20 @@ function App() {
       {/* HEADER */}
       <div style={{background:"var(--bg-header)",borderBottom:"1px solid var(--border2)",padding:"10px 16px",display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap",position:"sticky",top:0,zIndex:20}}>
         <div style={{display:"flex",alignItems:"center",gap:"8px",flex:1,minWidth:"160px"}}>
-          <div style={{width:"28px",height:"28px",borderRadius:"6px",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="8" y="1" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="1" y="8" width="5" height="5" rx="1" fill="#E6F1FB"/><rect x="8" y="8" width="5" height="5" rx="1" fill="#85B7EB"/></svg>
+          <div style={{flexShrink:0}}>
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="28" height="28" rx="6" fill="#8C1A1A"/>
+              <circle cx="14" cy="14" r="8" stroke="#FFD0D0" strokeWidth="1.5" fill="none"/>
+              <circle cx="14" cy="14" r="4" stroke="#FFD0D0" strokeWidth="1.5" fill="none"/>
+              <circle cx="14" cy="14" r="1.5" fill="#FFD0D0"/>
+              <line x1="14" y1="4" x2="14" y2="9" stroke="#FFD0D0" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="14" y1="19" x2="14" y2="24" stroke="#FFD0D0" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="4" y1="14" x2="9" y2="14" stroke="#FFD0D0" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="19" y1="14" x2="24" y2="14" stroke="#FFD0D0" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </div>
-          <span style={{fontWeight:600,fontSize:"15px",color:"var(--text-primary)"}}>CRM Industrial B2B</span>
-          <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"10px",background:"rgba(140,26,26,0.2)",color:"var(--text-accent)",fontWeight:600}}>3S+M</span>
+          <span style={{fontWeight:700,fontSize:"15px",color:"var(--text-primary)",letterSpacing:"0.02em"}}>FORECAST-CRM</span>
+
         </div>
         <div style={{display:"flex",gap:"4px"}}>
           {[["kanban","Pipeline/Forecast"],["tasks","Tarefas"],["clients","Clientes"],["relatorio","Relatório"],["posvendas","Pós-venda"],["budget","Budget"],["orcamentos","Orçamentos"],["projetos","Projetos"]].map(([v,l])=>(
@@ -613,8 +676,8 @@ function App() {
         <button onClick={()=>setNewModal(true)} style={btn("#E1F5EE","#085041","#0F6E56")}>+ Nova oportunidade</button>
         <button onClick={()=>openAI(null)} style={btn("#EEEDFE","#3C3489","#534AB7")}>Gestor IA</button>
         <button onClick={exportData} style={btn("#f5f5f3","#555","#ddd")} title="Exportar backup">↓ Backup</button>
-        <label style={{...btn("#f5f5f3","#555","#ddd"),cursor:"pointer"}} title="Importar dados">↑ Importar<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/></label>
-        <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);}} style={{...btn("#f5f5f3","#555","#ddd"),fontSize:"11px"}}>🔑 API Key</button>
+        <label style={{...btn("#f5f5f3","#555","#ddd"),cursor:"pointer"}} title="Importar planilha XLSX (clientes, forecast, budget...)">↑ Importar planilha<input type="file" accept=".xlsx,.xls" onChange={importData} style={{display:"none"}}/></label>
+
         <button onClick={()=>setShowSettings(true)} title="Configurações" style={{width:"32px",height:"32px",borderRadius:"8px",border:"1px solid var(--border)",background:"var(--bg-card2)",cursor:"pointer",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text-secondary)"}}>⚙</button>
         <button onClick={()=>setShowProfile(true)} title={profile.userName||"Perfil"} style={{width:"34px",height:"34px",borderRadius:"50%",border:"2px solid #8C1A1A",background:"#8C1A1A",cursor:"pointer",overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
           {profile.photo ? <img src={profile.photo} style={{width:"34px",height:"34px",objectFit:"cover"}} alt="perfil"/> : <span style={{fontSize:"11px",fontWeight:700,color:"#FFD0D0",pointerEvents:"none"}}>{(profile.userName||"U").split(" ").map(w=>w[0]).slice(0,2).join("")}</span>}
@@ -2113,7 +2176,7 @@ function App() {
           <div style={{padding:"10px 14px",borderBottom:"1px solid var(--border2)",display:"flex",flexDirection:"column",gap:"8px",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
               <div style={{width:"26px",height:"26px",borderRadius:"50%",background:"#8C1A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#fff",fontWeight:700,flexShrink:0}}>IA</div>
-              <span style={{fontSize:"13px",fontWeight:700,flex:1,color:"var(--text-primary)"}}>Gestor IA · 3S+M</span>
+              <span style={{fontSize:"13px",fontWeight:700,flex:1,color:"var(--text-primary)"}}>Gestor IA</span>
               {sel&&<span style={{fontSize:"10px",color:"var(--text-accent)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"80px"}}>{sel.company}</span>}
               <button onClick={()=>setAiOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"16px",lineHeight:1}}>✕</button>
             </div>
@@ -2369,10 +2432,14 @@ function App() {
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
                 <button onClick={exportData} style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>↓ Exportar backup</button>
                 <label style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>
-                  ↑ Importar backup<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/>
+                  ↑ Restaurar backup .json<input type="file" accept=".json" onChange={importData} style={{display:"none"}}/>
                 </label>
-                <button onClick={()=>{setKeyDraft(apiKey);setShowKey(true);setShowSettings(false);}}
-                  style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid var(--border)",background:"var(--bg-card2)",color:"var(--text-secondary)",cursor:"pointer"}}>🔑 API Key</button>
+                <button onClick={()=>{
+                  const pwd = window.prompt("Senha do administrador:");
+                  if(pwd === "sinuelo2026") {setKeyDraft(apiKey);setShowKey(true);setShowSettings(false);}
+                  else if(pwd !== null) alert("Senha incorreta.");
+                }}
+                  style={{padding:"7px 14px",fontSize:"12px",borderRadius:"6px",border:"1px solid #854F0B",background:"rgba(133,79,11,0.1)",color:"#EF9F27",cursor:"pointer",fontWeight:600}}>🔑 API Key (Admin)</button>
               </div>
             </div>
 
@@ -2383,24 +2450,26 @@ function App() {
       {/* MODAL PROJETO */}
       {projModal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60,padding:"12px"}}>
-          <div style={{background:"var(--bg-card)",borderRadius:"12px",border:"1px solid var(--border)",width:"640px",maxWidth:"100%",maxHeight:"95vh",overflowY:"auto",display:"flex",flexDirection:"column"}}>
+          <div style={{background:"var(--bg-card)",borderRadius:"12px",border:"1px solid var(--border)",width:"860px",maxWidth:"98vw",maxHeight:"96vh",overflowY:"auto",display:"flex",flexDirection:"column"}}>
 
-            {/* Header */}
-            <div style={{padding:"16px 20px 12px",borderBottom:"1px solid var(--border2)",flexShrink:0}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)"}}>{projForm.id?"Editar projeto":"Novo projeto técnico"}</div>
-                <button onClick={()=>setProjModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
-              </div>
+            {/* Título */}
+            <div style={{padding:"16px 24px 12px",borderBottom:"1px solid var(--border2)",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+              <div style={{fontSize:"15px",fontWeight:700,color:"var(--text-primary)"}}>{projForm.id?"Editar projeto":"Novo projeto técnico"}</div>
+              <button onClick={()=>setProjModal(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text-muted)",fontSize:"18px"}}>✕</button>
+            </div>
 
-              {/* DADOS GERAIS — sempre visíveis */}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
-                <div style={{gridColumn:"1/-1"}}>
+            {/* Corpo scrollável */}
+            <div style={{overflowY:"auto",flex:1,padding:"0 24px"}}>
+
+              {/* LINHA 1: Nome + Cliente + Opp */}
+              <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:"10px",marginTop:"16px",marginBottom:"12px"}}>
+                <div>
                   <label style={lbl}>Nome do projeto *</label>
                   <input value={projForm.name} onChange={e=>setProjForm({...projForm,name:e.target.value})} style={inp} placeholder="Ex: Braço 3arm linha montagem Honda"/>
                 </div>
                 <div>
                   <label style={lbl}>Cliente</label>
-                  <input value={projForm.client} onChange={e=>setProjForm({...projForm,client:e.target.value})} style={inp} placeholder="Ex: Caterpillar"/>
+                  <input value={projForm.client} onChange={e=>setProjForm({...projForm,client:e.target.value})} style={inp}/>
                 </div>
                 <div>
                   <label style={lbl}>Vincular oportunidade</label>
@@ -2411,23 +2480,16 @@ function App() {
                 </div>
               </div>
 
-              {/* Engenheiro de suporte */}
-              <div style={{background:"rgba(24,95,165,0.08)",borderRadius:"8px",padding:"10px 12px",marginBottom:"10px"}}>
-                <div style={{fontSize:"10px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Engenheiro / Suporte</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
-                  <div>
-                    <label style={lbl}>Função / Cargo</label>
-                    <input value={projForm.engRole} onChange={e=>setProjForm({...projForm,engRole:e.target.value})} style={inp} placeholder="Ex: Engenheiro de Aplicação"/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Nome</label>
-                    <input value={projForm.engName} onChange={e=>setProjForm({...projForm,engName:e.target.value})} style={inp} placeholder="Nome do responsável"/>
-                  </div>
+              {/* LINHA 2: Engenheiro + Status + Prazo */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:"10px",marginBottom:"14px",background:"rgba(24,95,165,0.06)",borderRadius:"8px",padding:"10px 12px"}}>
+                <div>
+                  <label style={lbl}>Função / Suporte</label>
+                  <input value={projForm.engRole} onChange={e=>setProjForm({...projForm,engRole:e.target.value})} style={inp} placeholder="Engenheiro de Aplicação"/>
                 </div>
-              </div>
-
-              {/* Status e prazo */}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"4px"}}>
+                <div>
+                  <label style={lbl}>Nome</label>
+                  <input value={projForm.engName} onChange={e=>setProjForm({...projForm,engName:e.target.value})} style={inp}/>
+                </div>
                 <div>
                   <label style={lbl}>Status</label>
                   <select value={projForm.status} onChange={e=>setProjForm({...projForm,status:e.target.value})} style={inp}>
@@ -2443,256 +2505,241 @@ function App() {
                   <input type="date" value={projForm.deadline} onChange={e=>setProjForm({...projForm,deadline:e.target.value})} style={inp}/>
                 </div>
               </div>
-            </div>
 
-            {/* Seleção de fornecedor */}
-            <div style={{padding:"12px 20px",borderBottom:"1px solid var(--border2)",flexShrink:0}}>
-              <label style={lbl}>Fornecedor / Formulário técnico</label>
-              <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
-                {[["3arm","3arm","#E24B4A"],["Lubbering","Lübbering","#185FA5"],["outro","Outro","#888"]].map(([v,l,c])=>(
-                  <button key={v} onClick={()=>setProjForm({...projForm,supplier:v})}
-                    style={{flex:1,padding:"8px",fontSize:"12px",borderRadius:"8px",border:`2px solid ${projForm.supplier===v?c:"var(--border)"}`,background:projForm.supplier===v?c+"18":"transparent",color:projForm.supplier===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.supplier===v?700:400}}>{l}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* FORMULÁRIO 3ARM */}
-            {projForm.supplier==="3arm"&&(
-              <div style={{padding:"14px 20px",overflowY:"auto",flex:1}}>
-                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"12px"}}>2 · Kind of Tool</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"14px"}}>
-                  <div>
-                    <label style={lbl}>Tipo de ferramenta</label>
-                    <select value={projForm.arm_toolType} onChange={e=>setProjForm({...projForm,arm_toolType:e.target.value})} style={inp}>
-                      <option value="">Selecionar...</option>
-                      <option>Grinder</option><option>Drill</option><option>Magnetic Drill</option>
-                      <option>Scanner / Câmera</option><option>Impact Wrench</option><option>Tightening Tool</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Marca (Brand)</label>
-                    <input value={projForm.arm_brand} onChange={e=>setProjForm({...projForm,arm_brand:e.target.value})} style={inp} placeholder="Ex: Norbar, Bosch, Panasonic"/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Referência do item</label>
-                    <input value={projForm.arm_itemRef} onChange={e=>setProjForm({...projForm,arm_itemRef:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>STP / 3D disponível</label>
-                    <select value={projForm.arm_stp} onChange={e=>setProjForm({...projForm,arm_stp:e.target.value})} style={inp}>
-                      <option value="">—</option><option value="sim">Sim</option><option value="nao">Não</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Dimensões (mm)</label>
-                    <input value={projForm.arm_dimensions} onChange={e=>setProjForm({...projForm,arm_dimensions:e.target.value})} style={inp} placeholder="C x L x A"/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Peso (kg)</label>
-                    <input type="number" value={projForm.arm_weight} onChange={e=>setProjForm({...projForm,arm_weight:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Torque máx. (Nm)</label>
-                    <input type="number" value={projForm.arm_torque} onChange={e=>setProjForm({...projForm,arm_torque:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Barra de reação (Reaction bar)</label>
-                    <select value={projForm.arm_reactionBar} onChange={e=>setProjForm({...projForm,arm_reactionBar:e.target.value})} style={inp}>
-                      <option value="sim">Sim</option><option value="nao">Não</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>3 · Working Conditions</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"8px"}}>
-                  {[["arm_workVertical","Vertical"],["arm_workHorizontal","Horizontal"],["arm_workAnyAngle","Qualquer ângulo"]].map(([k,l])=>(
-                    <label key={k} style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"var(--text-secondary)",cursor:"pointer",background:"var(--bg-card2)",padding:"7px 10px",borderRadius:"6px",border:`1px solid ${projForm[k]?"#E24B4A":"var(--border)"}`}}>
-                      <input type="checkbox" checked={!!projForm[k]} onChange={e=>setProjForm({...projForm,[k]:e.target.checked})} style={{cursor:"pointer"}}/>
-                      {l}
-                    </label>
+              {/* FORNECEDOR */}
+              <div style={{marginBottom:"16px"}}>
+                <label style={lbl}>Fornecedor / Formulário técnico</label>
+                <div style={{display:"flex",gap:"8px",marginTop:"4px"}}>
+                  {[["3arm","3arm","#E24B4A"],["Lubbering","Lübbering","#185FA5"],["outro","Outro","#888"]].map(([v,l,c])=>(
+                    <button key={v} onClick={()=>setProjForm({...projForm,supplier:v})}
+                      style={{flex:1,padding:"9px",fontSize:"13px",borderRadius:"8px",border:"2px solid "+(projForm.supplier===v?c:"var(--border)"),background:projForm.supplier===v?c+"18":"transparent",color:projForm.supplier===v?c:"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.supplier===v?700:400}}>{l}</button>
                   ))}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"14px"}}>
-                  <div>
-                    <label style={lbl}>Move entre estações?</label>
-                    <select value={projForm.arm_moveStation} onChange={e=>setProjForm({...projForm,arm_moveStation:e.target.value})} style={inp}>
-                      <option value="sim">Sim</option><option value="nao">Não</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Troca a ferramenta frequentemente?</label>
-                    <select value={projForm.arm_changeTool} onChange={e=>setProjForm({...projForm,arm_changeTool:e.target.value})} style={inp}>
-                      <option value="sim">Sim</option><option value="nao">Não</option>
-                    </select>
-                  </div>
-                </div>
+              </div>
 
-                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>4 · Work Place</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
-                  <div>
-                    <label style={lbl}>Altura requerida (mm)</label>
-                    <input type="number" value={projForm.arm_heightReq} onChange={e=>setProjForm({...projForm,arm_heightReq:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Alcance requerido (mm)</label>
-                    <input type="number" value={projForm.arm_reachReq} onChange={e=>setProjForm({...projForm,arm_reachReq:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Limitações no entorno?</label>
-                    <select value={projForm.arm_limitations} onChange={e=>setProjForm({...projForm,arm_limitations:e.target.value})} style={inp}>
-                      <option value="sim">Sim</option><option value="nao">Não</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Se sim, especifique</label>
-                    <input value={projForm.arm_limitDesc} onChange={e=>setProjForm({...projForm,arm_limitDesc:e.target.value})} style={inp} placeholder="Descreva as limitações"/>
-                  </div>
-                </div>
+              {/* ══ FORMULÁRIO 3ARM ══ */}
+              {projForm.supplier==="3arm"&&(
+                <div style={{border:"1px solid rgba(226,75,74,0.3)",borderRadius:"10px",padding:"16px",marginBottom:"16px"}}>
+                  <div style={{fontSize:"12px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"14px"}}>Application Questionnaire — 3arm</div>
 
-                <div style={{fontSize:"11px",fontWeight:700,color:"#E24B4A",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>5 · Installation Requirements</div>
-                <div style={{marginBottom:"14px"}}>
-                  <label style={lbl}>Tipo de montagem</label>
-                  <div style={{display:"flex",gap:"8px"}}>
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#E24B4A",marginBottom:"8px",borderBottom:"1px solid rgba(226,75,74,0.2)",paddingBottom:"4px"}}>2 · Kind of Tool</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px",marginBottom:"16px"}}>
+                    <div>
+                      <label style={lbl}>Tipo de ferramenta</label>
+                      <select value={projForm.arm_toolType} onChange={e=>setProjForm({...projForm,arm_toolType:e.target.value})} style={inp}>
+                        <option value="">Selecionar...</option>
+                        <option>Grinder</option><option>Drill</option><option>Magnetic Drill</option>
+                        <option>Scanner / Câmera</option><option>Impact Wrench</option><option>Tightening Tool</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Marca (Brand)</label>
+                      <input value={projForm.arm_brand} onChange={e=>setProjForm({...projForm,arm_brand:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Referência do item</label>
+                      <input value={projForm.arm_itemRef} onChange={e=>setProjForm({...projForm,arm_itemRef:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>STP / 3D disponível</label>
+                      <select value={projForm.arm_stp} onChange={e=>setProjForm({...projForm,arm_stp:e.target.value})} style={inp}>
+                        <option value="">—</option><option value="sim">Sim</option><option value="nao">Não</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Dimensões (mm)</label>
+                      <input value={projForm.arm_dimensions} onChange={e=>setProjForm({...projForm,arm_dimensions:e.target.value})} style={inp} placeholder="C x L x A"/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Peso (kg)</label>
+                      <input type="number" value={projForm.arm_weight} onChange={e=>setProjForm({...projForm,arm_weight:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Torque máx. (Nm)</label>
+                      <input type="number" value={projForm.arm_torque} onChange={e=>setProjForm({...projForm,arm_torque:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Barra de reação</label>
+                      <select value={projForm.arm_reactionBar} onChange={e=>setProjForm({...projForm,arm_reactionBar:e.target.value})} style={inp}>
+                        <option value="sim">Sim</option><option value="nao">Não</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#E24B4A",marginBottom:"8px",borderBottom:"1px solid rgba(226,75,74,0.2)",paddingBottom:"4px"}}>3 · Working Conditions</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"8px"}}>
+                    {[["arm_workVertical","Vertical"],["arm_workHorizontal","Horizontal"],["arm_workAnyAngle","Qualquer ângulo"]].map(([k,l])=>(
+                      <label key={k} style={{display:"flex",alignItems:"center",gap:"6px",fontSize:"11px",color:"var(--text-secondary)",cursor:"pointer",background:"var(--bg-card2)",padding:"8px 10px",borderRadius:"6px",border:"1px solid "+(projForm[k]?"#E24B4A":"var(--border)")}}>
+                        <input type="checkbox" checked={!!projForm[k]} onChange={e=>setProjForm({...projForm,[k]:e.target.checked})} style={{cursor:"pointer"}}/>{l}
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"10px",marginBottom:"16px"}}>
+                    <div>
+                      <label style={lbl}>Move entre estações?</label>
+                      <select value={projForm.arm_moveStation} onChange={e=>setProjForm({...projForm,arm_moveStation:e.target.value})} style={inp}>
+                        <option value="sim">Sim</option><option value="nao">Não</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Troca ferramenta frequentemente?</label>
+                      <select value={projForm.arm_changeTool} onChange={e=>setProjForm({...projForm,arm_changeTool:e.target.value})} style={inp}>
+                        <option value="sim">Sim</option><option value="nao">Não</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#E24B4A",marginBottom:"8px",borderBottom:"1px solid rgba(226,75,74,0.2)",paddingBottom:"4px"}}>4 · Work Place</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px",marginBottom:"16px"}}>
+                    <div>
+                      <label style={lbl}>Altura requerida (mm)</label>
+                      <input type="number" value={projForm.arm_heightReq} onChange={e=>setProjForm({...projForm,arm_heightReq:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Alcance requerido (mm)</label>
+                      <input type="number" value={projForm.arm_reachReq} onChange={e=>setProjForm({...projForm,arm_reachReq:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Limitações no entorno?</label>
+                      <select value={projForm.arm_limitations} onChange={e=>setProjForm({...projForm,arm_limitations:e.target.value})} style={inp}>
+                        <option value="sim">Sim</option><option value="nao">Não</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Especifique</label>
+                      <input value={projForm.arm_limitDesc} onChange={e=>setProjForm({...projForm,arm_limitDesc:e.target.value})} style={inp}/>
+                    </div>
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#E24B4A",marginBottom:"8px",borderBottom:"1px solid rgba(226,75,74,0.2)",paddingBottom:"4px"}}>5 · Installation Requirements</div>
+                  <div style={{display:"flex",gap:"10px"}}>
                     {[["top","Top mount (por cima)"],["bottom","Bottom mount (por baixo)"]].map(([v,l])=>(
                       <button key={v} onClick={()=>setProjForm({...projForm,arm_mount:v})}
-                        style={{flex:1,padding:"8px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${projForm.arm_mount===v?"#E24B4A":"var(--border)"}`,background:projForm.arm_mount===v?"rgba(226,75,74,0.12)":"transparent",color:projForm.arm_mount===v?"#E24B4A":"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.arm_mount===v?600:400}}>{l}</button>
+                        style={{flex:1,padding:"9px",fontSize:"12px",borderRadius:"6px",border:"1px solid "+(projForm.arm_mount===v?"#E24B4A":"var(--border)"),background:projForm.arm_mount===v?"rgba(226,75,74,0.12)":"transparent",color:projForm.arm_mount===v?"#E24B4A":"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.arm_mount===v?600:400}}>{l}</button>
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* ══ FORMULÁRIO LÜBBERING ══ */}
+              {projForm.supplier==="Lubbering"&&(
+                <div style={{border:"1px solid rgba(24,95,165,0.3)",borderRadius:"10px",padding:"16px",marginBottom:"16px"}}>
+                  <div style={{fontSize:"12px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"14px"}}>Anfrageformblatt — Lübbering</div>
+
+                  <div style={{marginBottom:"14px"}}>
+                    <label style={lbl}>Projektbezeichnung · Project</label>
+                    <input value={projForm.lub_project} onChange={e=>setProjForm({...projForm,lub_project:e.target.value})} style={inp} placeholder="Nome/descrição do projeto"/>
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#185FA5",marginBottom:"8px",borderBottom:"1px solid rgba(24,95,165,0.2)",paddingBottom:"4px"}}>Technische Angaben · Technical Details</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px",marginBottom:"16px"}}>
+                    <div>
+                      <label style={lbl}>Torque (Nm)</label>
+                      <input type="number" value={projForm.lub_torque} onChange={e=>setProjForm({...projForm,lub_torque:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Min / Max</label>
+                      <select value={projForm.lub_torqueMinMax} onChange={e=>setProjForm({...projForm,lub_torqueMinMax:e.target.value})} style={inp}>
+                        <option value="min">Min</option><option value="max">Max</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Precisão (Accuracy)</label>
+                      <input value={projForm.lub_accuracy} onChange={e=>setProjForm({...projForm,lub_accuracy:e.target.value})} style={inp} placeholder="Ex: ±3%"/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Bitola SW (Socket size)</label>
+                      <input value={projForm.lub_socket} onChange={e=>setProjForm({...projForm,lub_socket:e.target.value})} style={inp} placeholder="Ex: SW19"/>
+                    </div>
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#185FA5",marginBottom:"8px",borderBottom:"1px solid rgba(24,95,165,0.2)",paddingBottom:"4px"}}>Abtrieb · Output type</div>
+                  <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
+                    {[["closed_offset","Closed offset"],["open_offset","Open offset"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setProjForm({...projForm,lub_outputType:v})}
+                        style={{flex:1,padding:"9px",fontSize:"12px",borderRadius:"6px",border:"1px solid "+(projForm.lub_outputType===v?"#185FA5":"var(--border)"),background:projForm.lub_outputType===v?"rgba(24,95,165,0.12)":"transparent",color:projForm.lub_outputType===v?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.lub_outputType===v?600:400}}>{l}</button>
+                    ))}
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#185FA5",marginBottom:"8px",borderBottom:"1px solid rgba(24,95,165,0.2)",paddingBottom:"4px"}}>Abtriebsprofile · Socket Profiles</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:"6px",marginBottom:"16px"}}>
+                    {["HEX","DH","BH","SFD","PF","NH","Torx E","Torx TX","SD","HD","AVZ","IVZ"].map(p=>{
+                      const isSel=(projForm.lub_profileTypes||[]).includes(p);
+                      return (
+                        <button key={p} onClick={()=>{const cur=projForm.lub_profileTypes||[];setProjForm({...projForm,lub_profileTypes:isSel?cur.filter(x=>x!==p):[...cur,p]});}}
+                          style={{padding:"7px 4px",fontSize:"11px",borderRadius:"5px",border:"1px solid "+(isSel?"#185FA5":"var(--border)"),background:isSel?"rgba(24,95,165,0.12)":"transparent",color:isSel?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:isSel?700:400,textAlign:"center"}}>{p}</button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#185FA5",marginBottom:"8px",borderBottom:"1px solid rgba(24,95,165,0.2)",paddingBottom:"4px"}}>Sonderformen · Special Forms</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginBottom:"16px"}}>
+                    {["Außenlänge (Extended)","Durchgeräumt (Broached)","Profiltiefe (Profile depth)","BH-Standard","BH-Sonder (bolt retaining)","Magnet Sackloch (blind)","Magnet Kernloch (core)","Abtrieb federnd (elastic)"].map(f=>{
+                      const isSel=(projForm.lub_specialForms||[]).includes(f);
+                      return (
+                        <button key={f} onClick={()=>{const cur=projForm.lub_specialForms||[];setProjForm({...projForm,lub_specialForms:isSel?cur.filter(x=>x!==f):[...cur,f]});}}
+                          style={{padding:"6px 7px",fontSize:"10px",borderRadius:"5px",border:"1px solid "+(isSel?"#185FA5":"var(--border)"),background:isSel?"rgba(24,95,165,0.12)":"transparent",color:isSel?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:isSel?600:400,textAlign:"left"}}>{f}</button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{fontSize:"11px",fontWeight:600,color:"#185FA5",marginBottom:"8px",borderBottom:"1px solid rgba(24,95,165,0.2)",paddingBottom:"4px"}}>Adaption · Driving Machine</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"10px"}}>
+                    <div>
+                      <label style={lbl}>Tipo de adaptação</label>
+                      <select value={projForm.lub_adaptionType} onChange={e=>setProjForm({...projForm,lub_adaptionType:e.target.value})} style={inp}>
+                        <option value="">Selecionar...</option>
+                        <option>Angle head 90°</option>
+                        <option>Angle head 110°</option>
+                        <option>Straight spindle</option>
+                        <option>Pistol grip machine</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={lbl}>Máquina motriz</label>
+                      <input value={projForm.lub_driveMachine} onChange={e=>setProjForm({...projForm,lub_driveMachine:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Artigo nº</label>
+                      <input value={projForm.lub_articleNo} onChange={e=>setProjForm({...projForm,lub_articleNo:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>Torque máx. (Nm)</label>
+                      <input type="number" value={projForm.lub_maxTorque} onChange={e=>setProjForm({...projForm,lub_maxTorque:e.target.value})} style={inp}/>
+                    </div>
+                    <div>
+                      <label style={lbl}>RPM máx.</label>
+                      <input type="number" value={projForm.lub_maxRPM} onChange={e=>setProjForm({...projForm,lub_maxRPM:e.target.value})} style={inp}/>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Outro */}
+              {projForm.supplier==="outro"&&(
+                <div style={{marginBottom:"16px"}}>
+                  <label style={lbl}>Descrição / especificações técnicas</label>
+                  <textarea value={projForm.notes} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"120px"}} placeholder="Descreva os requisitos do projeto..."/>
+                </div>
+              )}
+
+              {/* Notas */}
+              <div style={{marginBottom:"20px"}}>
+                <label style={lbl}>Notas internas</label>
+                <textarea value={projForm.notes} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"72px"}} placeholder="Observações, fotos disponíveis, contexto..."/>
               </div>
-            )}
 
-            {/* FORMULÁRIO LÜBBERING */}
-            {projForm.supplier==="Lubbering"&&(
-              <div style={{padding:"14px 20px",overflowY:"auto",flex:1}}>
-                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"10px"}}>Projektbezeichnung · Project</div>
-                <div style={{marginBottom:"14px"}}>
-                  <input value={projForm.lub_project} onChange={e=>setProjForm({...projForm,lub_project:e.target.value})} style={inp} placeholder="Nome/descrição do projeto Lübbering"/>
-                </div>
-
-                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"10px"}}>Technische Angaben · Technical Details</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"8px"}}>
-                  <div>
-                    <label style={lbl}>Torque (Nm)</label>
-                    <input type="number" value={projForm.lub_torque} onChange={e=>setProjForm({...projForm,lub_torque:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Min / Max</label>
-                    <select value={projForm.lub_torqueMinMax} onChange={e=>setProjForm({...projForm,lub_torqueMinMax:e.target.value})} style={inp}>
-                      <option value="min">Min</option><option value="max">Max</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Precisão (Accuracy)</label>
-                    <input value={projForm.lub_accuracy} onChange={e=>setProjForm({...projForm,lub_accuracy:e.target.value})} style={inp} placeholder="Ex: ±3%"/>
-                  </div>
-                  <div style={{gridColumn:"1/-1"}}>
-                    <label style={lbl}>Bitola — Schlüsselweite (Socket size)</label>
-                    <input value={projForm.lub_socket} onChange={e=>setProjForm({...projForm,lub_socket:e.target.value})} style={inp} placeholder="Ex: SW19, SW24..."/>
-                  </div>
-                </div>
-
-                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Abtrieb · Output type</div>
-                <div style={{display:"flex",gap:"8px",marginBottom:"14px"}}>
-                  {[["closed_offset","Closed offset"],["open_offset","Open offset"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setProjForm({...projForm,lub_outputType:v})}
-                      style={{flex:1,padding:"8px",fontSize:"11px",borderRadius:"6px",border:`1px solid ${projForm.lub_outputType===v?"#185FA5":"var(--border)"}`,background:projForm.lub_outputType===v?"rgba(24,95,165,0.12)":"transparent",color:projForm.lub_outputType===v?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:projForm.lub_outputType===v?600:400}}>{l}</button>
-                  ))}
-                </div>
-
-                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Abtriebsprofile · Socket Profiles</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"5px",marginBottom:"14px"}}>
-                  {["HEX","DH","BH","SFD","PF","NH","Torx E","Torx TX","SD","HD","AVZ","IVZ"].map(p=>{
-                    const sel=( projForm.lub_profileTypes||[]).includes(p);
-                    return (
-                      <button key={p} onClick={()=>{
-                        const cur=projForm.lub_profileTypes||[];
-                        setProjForm({...projForm,lub_profileTypes:sel?cur.filter(x=>x!==p):[...cur,p]});
-                      }} style={{padding:"6px 4px",fontSize:"10px",borderRadius:"5px",border:`1px solid ${sel?"#185FA5":"var(--border)"}`,background:sel?"rgba(24,95,165,0.12)":"transparent",color:sel?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:sel?700:400,textAlign:"center"}}>
-                        {p}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Sonderformen · Special Forms</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"5px",marginBottom:"14px"}}>
-                  {["Außenlänge (Extended length)","Durchgeräumt (Broached)","Profiltiefe (Profile depth)","BH-Standard","BH-Sonder (bolt retaining)","Magnet Sackloch (blind hole)","Magnet Kernloch (core hole)","Abtrieb federnd (elastic)"].map(f=>{
-                    const sel=(projForm.lub_specialForms||[]).includes(f);
-                    return (
-                      <button key={f} onClick={()=>{
-                        const cur=projForm.lub_specialForms||[];
-                        setProjForm({...projForm,lub_specialForms:sel?cur.filter(x=>x!==f):[...cur,f]});
-                      }} style={{padding:"5px 7px",fontSize:"10px",borderRadius:"5px",border:`1px solid ${sel?"#185FA5":"var(--border)"}`,background:sel?"rgba(24,95,165,0.12)":"transparent",color:sel?"#185FA5":"var(--text-secondary)",cursor:"pointer",fontWeight:sel?600:400,textAlign:"left"}}>
-                        {f}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div style={{fontSize:"11px",fontWeight:700,color:"#185FA5",textTransform:"uppercase",letterSpacing:".08em",marginBottom:"8px"}}>Adaption · Driving machine</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"8px"}}>
-                  <div>
-                    <label style={lbl}>Tipo de adaptação</label>
-                    <select value={projForm.lub_adaptionType} onChange={e=>setProjForm({...projForm,lub_adaptionType:e.target.value})} style={inp}>
-                      <option value="">Selecionar...</option>
-                      <option>Angle head 90°</option>
-                      <option>Angle head 110°</option>
-                      <option>Straight spindle</option>
-                      <option>Pistol grip machine</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Máquina motriz</label>
-                    <input value={projForm.lub_driveMachine} onChange={e=>setProjForm({...projForm,lub_driveMachine:e.target.value})} style={inp} placeholder="Ex: Bosch IW, Norbar EBT"/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Artigo nº</label>
-                    <input value={projForm.lub_articleNo} onChange={e=>setProjForm({...projForm,lub_articleNo:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Torque máx. máq. (Nm)</label>
-                    <input type="number" value={projForm.lub_maxTorque} onChange={e=>setProjForm({...projForm,lub_maxTorque:e.target.value})} style={inp}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>RPM máx.</label>
-                    <input type="number" value={projForm.lub_maxRPM} onChange={e=>setProjForm({...projForm,lub_maxRPM:e.target.value})} style={inp}/>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Outro fornecedor */}
-            {projForm.supplier==="outro"&&(
-              <div style={{padding:"14px 20px",flex:1}}>
-                <label style={lbl}>Descrição / especificações técnicas</label>
-                <textarea value={projForm.notes} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"120px"}} placeholder="Descreva os requisitos do projeto..."/>
-              </div>
-            )}
-
-            {/* Notas — sempre visível */}
-            <div style={{padding:"0 20px 8px"}}>
-              <label style={lbl}>Notas internas</label>
-              <textarea value={projForm.notes} onChange={e=>setProjForm({...projForm,notes:e.target.value})} style={{...inp,height:"56px"}} placeholder="Observações, fotos disponíveis, contexto..."/>
-            </div>
+            </div>{/* fim corpo scrollável */}
 
             {/* Footer */}
-            <div style={{padding:"12px 20px",borderTop:"1px solid var(--border2)",display:"flex",gap:"8px",flexShrink:0}}>
-              <button onClick={()=>{
-                if(!projForm.name) return;
-                if(projForm.id){
-                  updateProj(projForm);
-                  setSelProj(projForm);
-                } else {
-                  addProjeto();
-                }
-                setProjModal(false);
-              }} disabled={!projForm.name}
+            <div style={{padding:"14px 24px",borderTop:"1px solid var(--border2)",display:"flex",gap:"8px",flexShrink:0}}>
+              <button onClick={()=>{if(!projForm.name)return;projForm.id?updateProj(projForm):addProjeto();setProjModal(false);}} disabled={!projForm.name}
                 style={{flex:1,padding:"10px",fontSize:"13px",borderRadius:"6px",border:"none",background:projForm.name?"#8C1A1A":"#4A2A2A",color:projForm.name?"#FFD0D0":"#7A5050",cursor:projForm.name?"pointer":"default",fontWeight:600}}>
                 {projForm.id?"Salvar alterações":"Criar projeto"}
               </button>
               <button onClick={()=>setProjModal(false)} style={{padding:"10px 16px",fontSize:"13px",borderRadius:"6px",border:"1px solid var(--border)",background:"transparent",color:"var(--text-secondary)",cursor:"pointer"}}>Cancelar</button>
             </div>
+
           </div>
         </div>
       )}
