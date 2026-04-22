@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background .25s,color .25s}
@@ -48,10 +48,17 @@ const SUPA_URL = "https://zckgghiweapaykcuiara.supabase.co";
 const SUPA_KEY = "sb_publishable_LrE8hZV2yfyED0QEp_MKqg_VH4aZRKr";
 // Supabase inicializado de forma lazy para evitar conflito com React
 function getSupabase() {
-  if (!window._supaClient && typeof window.supabase !== "undefined" && SUPA_URL !== "COLE_SUA_SUPABASE_URL_AQUI") {
-    window._supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true }
-    });
+  if (!window._supaClient && SUPA_URL !== "COLE_SUA_SUPABASE_URL_AQUI") {
+    try {
+      // Via CDN: o objeto global é "supabase" com método createClient
+      const { createClient } = window.supabase || supabase;
+      window._supaClient = createClient(SUPA_URL, SUPA_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true }
+      });
+    } catch(e) {
+      console.warn("Supabase init error:", e);
+      return null;
+    }
   }
   return window._supaClient || null;
 }
