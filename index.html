@@ -46,13 +46,25 @@ const { useState, useEffect, useRef } = React;
 // Substitua pelos seus valores em Settings → API no Supabase
 const SUPA_URL = "https://zckgghiweapaykcuiara.supabase.co";
 const SUPA_KEY = "sb_publishable_LrE8hZV2yfyED0QEp_MKqg_VH4aZRKr";
-const supabase = (typeof window.supabase !== "undefined" && SUPA_URL !== "COLE_SUA_SUPABASE_URL_AQUI")
-  ? window.supabase.createClient(SUPA_URL, SUPA_KEY)
-  : null;
-
-// Estado de autenticação global
-let _authUser = null;
-let _authProfile = null;
+// Supabase inicializado de forma lazy para evitar conflito com React
+function getSupabase() {
+  if (!window._supaClient && typeof window.supabase !== "undefined" && SUPA_URL !== "COLE_SUA_SUPABASE_URL_AQUI") {
+    window._supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+  return window._supaClient || null;
+}
+const supabase = { 
+  get client() { return getSupabase(); },
+  auth: {
+    getSession: (...a) => getSupabase()?.auth.getSession(...a) || Promise.resolve({data:{session:null}}),
+    onAuthStateChange: (...a) => getSupabase()?.auth.onAuthStateChange(...a) || {data:{subscription:{unsubscribe:()=>{}}}},
+    signInWithOAuth: (...a) => getSupabase()?.auth.signInWithOAuth(...a) || Promise.resolve({}),
+    signOut: (...a) => getSupabase()?.auth.signOut(...a) || Promise.resolve({}),
+  },
+  from: (...a) => getSupabase()?.from(...a),
+};
 
 const STAGES = [
   { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"var(--text-secondary)" },
@@ -101,7 +113,7 @@ function LoginScreen({ onLogin }) {
   const [err, setErr] = React.useState(null);
 
   async function loginGoogle() {
-    if (!supabase) { alert("Configure as chaves do Supabase no arquivo."); return; }
+    if (!getSupabase()) { alert("Configure as chaves do Supabase no arquivo."); return; }
     setLoading(true); setErr(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -166,7 +178,7 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(()=>{
-    if (!supabase) { setAuthChecked(true); return; } // sem Supabase = modo offline
+    if (!getSupabase()) { setAuthChecked(true); return; } // sem Supabase configurado = modo offline
 
     // Verificar sessão atual
     supabase.auth.getSession().then(({data:{session}})=>{
@@ -213,7 +225,7 @@ function App() {
   }
 
   // Não logado → tela de login
-  if (supabase && authSession === false) return <LoginScreen />;
+  if (getSupabase() && authSession === false) return <LoginScreen />;
 
   // Perfil carregado → passar para o CRM
   const userRole = authProfile?.role || "gestor"; // offline = gestor
@@ -830,7 +842,7 @@ function App() {
           <button onClick={()=>setShowProfile(true)} title={userName} style={{width:"34px",height:"34px",borderRadius:"50%",border:"2px solid #8C1A1A",background:"#8C1A1A",cursor:"pointer",overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
             {userAvatar ? <img src={userAvatar} style={{width:"34px",height:"34px",objectFit:"cover"}} alt="perfil"/> : <span style={{fontSize:"11px",fontWeight:700,color:"#FFD0D0",pointerEvents:"none"}}>{(userName||"U").split(" ").map(w=>w[0]).slice(0,2).join("")}</span>}
           </button>
-          {supabase && <button onClick={handleSignOut} title="Sair" style={{width:"28px",height:"28px",borderRadius:"8px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",fontSize:"13px",color:"var(--text-muted)",display:"flex",alignItems:"center",justifyContent:"center"}}>⏻</button>}
+          {getSupabase() && <button onClick={handleSignOut} title="Sair" style={{width:"28px",height:"28px",borderRadius:"8px",border:"1px solid var(--border)",background:"transparent",cursor:"pointer",fontSize:"13px",color:"var(--text-muted)",display:"flex",alignItems:"center",justifyContent:"center"}}>⏻</button>}
         </div>
       </div>
 
