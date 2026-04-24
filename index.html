@@ -51,7 +51,8 @@ function getSupabase() {
   if (!window._supaClient && SUPA_URL !== "COLE_SUA_SUPABASE_URL_AQUI") {
     try {
       // Via CDN: o objeto global é "supabase" com método createClient
-      const { createClient } = window.supabase || supabase;
+      const createClient = window.supabase && window.supabase.createClient;
+      if (!createClient) { console.warn("Supabase CDN nao carregou"); return null; }
       window._supaClient = createClient(SUPA_URL, SUPA_KEY, {
         auth: { persistSession: true, autoRefreshToken: true }
       });
