@@ -8,7 +8,6 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background .25s,color .25s}
@@ -42,30 +41,6 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
-// ── SUPABASE CONFIG ──────────────────────────────────────────────────────
-const SUPA_URL = "https://zckgghiweapaykcuiara.supabase.co";
-const SUPA_KEY = "sb_publishable_LrE8hZV2yfyED0QEp_MKqg_VH4aZRKr";
-
-const supa = (function() {
-  try {
-    const fn = window.supabase && window.supabase.createClient;
-    if (!fn) return null;
-    return fn(SUPA_URL, SUPA_KEY, {
-      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
-    });
-  } catch(e) { return null; }
-})();
-
-window.__S = undefined; 
-window.__SUPA_PROFILE = null;
-if (supa) {
-  supa.auth.getSession().then(function(r){
-    window.__S = r.data.session || false;
-  }).catch(function(){ window.__S = false; });
-} else {
-  window.__S = false;
-}
-
 const STAGES = [
   { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"var(--text-secondary)" },
   { id:"qualificacao", label:"Qualificação",  tag:"S2",   color:"#FF9090" },
@@ -76,111 +51,82 @@ const STAGES = [
   { id:"pos_venda",    label:"Pós-Venda",     tag:"M",    color:"#0F6E56" },
 ];
 
-const DEMO = [{"id": "1700000001", "title": "Multiplicador HT3 - 1000 + Tor. Pro 200 - 1504", "company": "Arcelormittal", "supplier": "Norbar", "contact": "Rafael Martins", "resp": "Elieser", "value": 0, "stage": "qualificacao", "priority": "baixa", "negType": "D", "forecastColor": "none", "nextAction": "15.04.26 - Verificar torque processo", "nextDate": "", "notes": "15.04.26 - Verificar torque processo\n01.04.26 - Primeira visita - oportunidade", "months": {"m1": true}, "history": [], "visitHistory": [], "createdAt": "2026-03-01"}];
-const CLIENTS = [{"alias": "CATERPILLAR", "name": "CATERPILLAR BRASIL LTDA", "cnpj": "61.064.911/0001-77", "city": "PIRACICABA", "state": "SP"}];
 const STORAGE_KEY = "crm_industrial_v2";
-const PRI_BG  = {alta:"#FCEBEB",media:"#FAEEDA",baixa:"#EAF3DE"};
-const PRI_TXT = {alta:"#791F1F",media:"#633806",baixa:"#27500A"};
-
-const SYS_PROMPT = `Você é o Gestor Comercial IA...`;
+const DEMO = [{"id": "1700000001", "title": "Multiplicador HT3 - 1000 + Tor. Pro 200 - 1504", "company": "Arcelormittal", "supplier": "Norbar", "contact": "Rafael Martins", "resp": "Elieser", "value": 0, "stage": "qualificacao", "priority": "baixa", "negType": "D", "forecastColor": "none", "nextAction": "15.04.26 - Verificar torque processo", "nextDate": "", "notes": "15.04.26 - Verificar torque processo\n01.04.26 - Primeira visita - oportunidade", "months": {"m1": true}, "history": [], "visitHistory": [], "createdAt": "2026-03-01"}];
 
 function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
 function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch {} }
 
-function LoginScreen() {
-  const [loading, setLoading] = React.useState(false);
-  const [err, setErr] = React.useState(null);
-
-  async function loginGoogle() {
-    if (!supa) { alert("Chaves do Supabase não configuradas."); return; }
-    setLoading(true); setErr(null);
-    const { error } = await supa.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin }
-    });
-    if (error) { setErr(error.message); setLoading(false); }
-  }
-
-  return (
-    <div style={{minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"var(--bg-app)"}}>
-      <div style={{width:"360px", background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"16px", padding:"40px 32px", textAlign:"center", boxShadow:"0 8px 40px rgba(0,0,0,0.15)"}}>
-        <h2 style={{fontSize:"22px",fontWeight:800,color:"var(--text-primary)",marginBottom:"32px"}}>FORECAST-CRM</h2>
-        <button onClick={loginGoogle} disabled={loading} style={{width:"100%", padding:"13px 20px", fontSize:"14px", fontWeight:600, borderRadius:"10px", border:"1px solid #ddd", background:"#fff", cursor:"pointer"}}>
-          {loading ? "Aguarde..." : "Entrar com Google"}
-        </button>
-        {err && <div style={{marginTop:"14px",color:"#E24B4A",fontSize:"12px"}}>{err}</div>}
-      </div>
-    </div>
-  );
-}
-
 function App() {
-  // ── 1. TODOS OS HOOKS (ESTADOS) NO TOPO DA FILA ────────────────────────
-  const [authSession, setAuthSession] = useState(()=> window.__S !== undefined ? window.__S : null);
-  const [authProfile, setAuthProfile] = useState(null);
-  const [authChecked, setAuthChecked] = useState(()=> window.__S !== undefined);
+  // ── TODOS OS HOOKS NO TOPO (Ordem garantida) ──
+  const [opps, setOpps] = useState(() => loadData() || DEMO);
+  const [view, setView] = useState("kanban");
+  const [theme, setTheme] = useState("light");
+  const [sel, setSel] = useState(null);
+  const [newModal, setNewModal] = useState(false);
 
-  const [opps, setOpps]           = useState(() => loadData() || DEMO);
-  const [sel, setSel]             = useState(null);
-  const [view, setView]           = useState("kanban");
-  const [pipelineView, setPipelineView] = useState(() => localStorage.getItem("crm_pipe_view") || "kanban");
-  const [forecastFilter, setForecastFilter] = useState("todos");
-  const [apiKey, setApiKey]       = useState(() => localStorage.getItem("crm_api_key") || "");
-  const [newModal, setNewModal]   = useState(false);
-  const [form, setForm]           = useState({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",nextTime:"",notes:"",supplier:"",resp:"",forecastColor:"none",confidence:0.1,negType:"D"});
+  useEffect(() => { 
+    saveData(opps); 
+    document.body.className = theme === 'light' ? 'theme-light' : 'theme-dark';
+  }, [opps, theme]);
 
-  // ── 2. EFEITOS (USEEFFECT) ───────────────────────────────────────────
-  useEffect(()=>{
-    if (!supa) { setAuthChecked(true); return; }
-    if (window.__S === undefined) {
-      const poll = setInterval(()=>{
-        if (window.__S !== undefined) {
-          clearInterval(poll);
-          setAuthSession(window.__S);
-          setAuthChecked(true);
-        }
-      }, 50);
-      return () => clearInterval(poll);
-    }
-    const { data: { subscription } } = supa.auth.onAuthStateChange((_e, session) => {
-      setAuthSession(session || false);
-      setAuthChecked(true);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  const today = new Date().toISOString().slice(0,10);
 
-  useEffect(() => { saveData(opps); }, [opps]);
-
-  // ── 3. FUNÇÕES AUXILIARES ───────────────────────────────────────────
-  function handleSignOut() { if (supa) supa.auth.signOut(); setAuthSession(false); }
-  function updateOpp(u) { setOpps(opps.map(o => o.id===u.id ? u : o)); setSel(u); }
-
-  // ── 4. CORREÇÃO DO ERRO 310: AS TELAS CONDICIONAIS FICAM AQUI ─────────
-  if (!authChecked) {
-    return (
-      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg-app)"}}>
-        <div style={{textAlign:"center",color:"var(--text-muted)",fontSize:"13px"}}>Carregando...</div>
-      </div>
-    );
-  }
-
-  if (supa && authSession === false) return <LoginScreen />;
-
-  // ── 5. RENDERIZAÇÃO DO APP PRINCIPAL ────────────────────────────────
   return (
-    <div style={{background:"var(--bg-app)", minHeight:"100vh", padding:"20px"}}>
-      <div style={{background:"var(--bg-header)", padding:"16px", borderRadius:"12px", border:"1px solid var(--border)", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-         <h2 style={{color:"var(--text-primary)"}}>FORECAST-CRM Ativo</h2>
-         <button onClick={handleSignOut} style={{padding:"8px 16px", borderRadius:"8px", border:"1px solid #E24B4A", color:"#E24B4A", cursor:"pointer"}}>Sair</button>
+    <div style={{minHeight:"100vh", padding:"20px"}}>
+      {/* HEADER */}
+      <div style={{background:"var(--bg-header)", padding:"16px", borderRadius:"12px", border:"1px solid var(--border)", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px"}}>
+        <div style={{display:"flex", alignItems:"center", gap:"12px"}}>
+          <div style={{width:"40px", height:"40px", background:"#8C1A1A", borderRadius:"8px", display:"flex", alignItems:"center", justifyContent:"center"}}>
+            <span style={{color:"#fff", fontWeight:"bold"}}>F</span>
+          </div>
+          <h2 style={{margin:0, color:"var(--text-primary)", fontSize:"18px"}}>FORECAST-CRM</h2>
+        </div>
+        
+        <div style={{display:"flex", gap:"10px"}}>
+          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={{padding:"8px", borderRadius:"8px", border:"1px solid var(--border)", background:"var(--bg-card)", cursor:"pointer"}}>
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+          <button onClick={() => setView("kanban")} style={{padding:"8px 16px", borderRadius:"8px", border:"1px solid var(--border)", background: view==="kanban" ? "#8C1A1A" : "var(--bg-card)", color: view==="kanban" ? "#fff" : "var(--text-primary)", cursor:"pointer"}}>Kanban</button>
+          <button onClick={() => setView("tabela")} style={{padding:"8px 16px", borderRadius:"8px", border:"1px solid var(--border)", background: view==="tabela" ? "#8C1A1A" : "var(--bg-card)", color: view==="tabela" ? "#fff" : "var(--text-primary)", cursor:"pointer"}}>Tabela</button>
+        </div>
       </div>
-      <div style={{marginTop:"20px", color:"var(--text-secondary)"}}>
-         Bem-vindo, {authSession?.user?.email}! O Erro 310 foi resolvido.
+
+      {/* DASHBOARD SIMPLES */}
+      <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:"15px", marginBottom:"20px"}}>
+        {STAGES.map(s => (
+          <div key={s.id} style={{background:"var(--bg-card)", padding:"15px", borderRadius:"10px", borderBottom:`4px solid ${s.color}`}}>
+            <div style={{fontSize:"12px", color:"var(--text-muted)"}}>{s.label}</div>
+            <div style={{fontSize:"20px", fontWeight:"bold", marginTop:"5px"}}>
+              {opps.filter(o => o.stage === s.id).length}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ÁREA DE CONTEÚDO */}
+      <div style={{background:"var(--bg-card)", padding:"20px", borderRadius:"12px", border:"1px solid var(--border)", minHeight:"400px"}}>
+        <p style={{color:"var(--text-secondary)"}}>
+          Aplicativo carregado em modo direto. O login foi desativado conforme solicitado.
+        </p>
+        <div style={{marginTop:"20px", display:"flex", flexWrap:"wrap", gap:"10px"}}>
+          {opps.map(o => (
+            <div key={o.id} style={{padding:"15px", border:"1px solid var(--border)", borderRadius:"8px", width:"250px"}}>
+              <div style={{fontWeight:"bold", fontSize:"14px"}}>{o.title}</div>
+              <div style={{fontSize:"12px", color:"var(--text-muted)", marginTop:"5px"}}>{o.company}</div>
+              <div style={{display:"inline-block", marginTop:"10px", padding:"2px 8px", borderRadius:"4px", fontSize:"10px", background:"var(--sinuelo-light)", color:"var(--sinuelo-text)"}}>
+                {o.stage.toUpperCase()}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
 </script>
 </body>
 </html>
