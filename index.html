@@ -39,21 +39,33 @@
 </head>
 <body class="theme-light">
 <div id="root"></div>
-<script type="text/babel">
+<script type="text/babel" data-presets="react">
 const { useState, useEffect, useRef } = React;
 
 // ── SUPABASE CONFIG ──────────────────────────────────────────────────────
 const SUPA_URL = "https://zckgghiweapaykcuiara.supabase.co";
 const SUPA_KEY = "sb_publishable_LrE8hZV2yfyED0QEp_MKqg_VH4aZRKr";
+
+// Inicializar Supabase ANTES do React para evitar erro #310
 const supa = (function() {
   try {
     const fn = window.supabase && window.supabase.createClient;
     if (!fn) return null;
-    return fn(SUPA_URL, SUPA_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    return fn(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
+    });
   } catch(e) { return null; }
 })();
-window.__S = undefined;
-if (supa) { supa.auth.getSession().then(r=>{ window.__S = r.data.session||false; }).catch(()=>{ window.__S = false; }); } else { window.__S = false; }
+// Pré-carregar sessão de forma assíncrona antes do React montar
+window.__S = undefined; // undefined=loading, false=sem sessão, obj=sessão
+window.__SUPA_PROFILE = null;
+if (supa) {
+  supa.auth.getSession().then(function(r){
+    window.__S = r.data.session || false;
+  }).catch(function(){ window.__S = false; });
+} else {
+  window.__S = false;
+}
 
 const STAGES = [
   { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"var(--text-secondary)" },
@@ -162,47 +174,61 @@ function LoginScreen({ onLogin }) {
 
 function App() {
   // ── AUTH STATE ────────────────────────────────────────────────────────
-  const [authSession, setAuthSession] = useState(()=> window.__S !== undefined ? window.__S : null);
+  // Usa sessão pré-carregada para evitar erro React #310
+  const [authSession, setAuthSession] = useState(null);
   const [authProfile, setAuthProfile] = useState(null);
-  const [authChecked, setAuthChecked] = useState(()=> window.__S !== undefined);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(()=>{
     if (!supa) { setAuthChecked(true); return; }
+
+    // Se sessão ainda não chegou, aguardar
     if (window.__S === undefined) {
       const poll = setInterval(()=>{
         if (window.__S !== undefined) {
           clearInterval(poll);
           setAuthSession(window.__S);
           setAuthChecked(true);
-          if (window.__S && window.__S.user) loadProfile(window.__S.user);
+          if (window.__S && window.__S.user) {
+            loadProfile(window.__S.user);
+          }
         }
       }, 50);
       return () => clearInterval(poll);
     }
+
+    // Sessão disponível — carregar perfil se logado
     if (authSession && authSession.user) loadProfile(authSession.user);
-    const { data: { subscription } } = supa.auth.onAuthStateChange((_e, s) => {
-      setAuthSession(s||false); if(s) loadProfile(s.user); else setAuthProfile(null); setAuthChecked(true);
+
+    // Escutar mudanças (logout, refresh de token)
+    const { data: { subscription } } = supa.auth.onAuthStateChange((_e, session) => {
+      setAuthSession(session || false);
+      if (session) loadProfile(session.user);
+      else setAuthProfile(null);
+      setAuthChecked(true);
     });
     return () => subscription.unsubscribe();
   }, []);
 
   async function loadProfile(user) {
-    const {data} = await supa.from("profiles").select("*").eq("id", user.id).single();
-    if (data) setAuthProfile(data);
+    try {
+      const { data } = await supa.from("profiles").select("*").eq("id", user.id).single();
+      if (data) setAuthProfile(data);
+    } catch(e) {}
   }
 
   async function handleSignOut() {
-    await supa.auth.signOut();
+    if (supa) await supa.auth.signOut();
     setAuthSession(false);
     setAuthProfile(null);
   }
 
   // Enquanto verifica sessão
-  if (!authChecked && supabase) {
+  if (!authChecked) {
     return (
       <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg-app)"}}>
         <div style={{textAlign:"center",color:"var(--text-muted)",fontSize:"13px",fontFamily:"-apple-system,sans-serif"}}>
-          <svg width="32" height="32" viewBox="0 0 56 56" fill="none" style={{marginBottom:"10px",display:"block",margin:"0 auto 10px"}}>
+          <svg width="32" height="32" viewBox="0 0 56 56" fill="none" style={{display:"block",margin:"0 auto 10px"}}>
             <rect width="56" height="56" rx="12" fill="#8C1A1A"/>
             <circle cx="28" cy="28" r="16" stroke="#FFD0D0" strokeWidth="2.5" fill="none"/>
             <circle cx="28" cy="28" r="3" fill="#FFD0D0"/>
@@ -216,9 +242,9 @@ function App() {
   // Não logado → tela de login
   if (supa && authSession === false) return <LoginScreen />;
 
-  // Perfil carregado → passar para o CRM
-  const userRole = authProfile?.role || "gestor"; // offline = gestor
-  const userName = authProfile?.name || (authSession?.user?.user_metadata?.full_name) || "Usuário";
+  // Logado → configurar perfil
+  const userRole = authProfile?.role || "gestor";
+  const userName = authProfile?.name || authSession?.user?.user_metadata?.full_name || "Usuário";
   const userAvatar = authSession?.user?.user_metadata?.avatar_url || null;
   const userEmail = authSession?.user?.email || "";
   const isGestor = userRole === "gestor";
@@ -2968,189 +2994,6 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-</body>
-</html>
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>FORECAST-CRM · Sinuelo Service</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <style>
-    /* 1. ESTILOS ORIGINAIS INTEGRADOS */
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:background .25s,color .25s}
-    input,select,textarea,button{font-family:inherit}
-    textarea{resize:vertical}
-    ::-webkit-scrollbar{width:5px;height:5px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{border-radius:3px}
-    body.theme-dark{
-      --bg-app:#1a1a1a;--bg-header:#2A2A2A;--bg-card:#252525;--bg-card2:#1E1E1E;
-      --bg-input:#1a1a1a;--border:#3A3A3A;--border2:#2E2E2E;
-      --text-primary:#F0EDED;--text-secondary:#A09090;--text-muted:#5A5050;
-      --text-accent:#FFAAAA;--text-green:#9FE1CB;--text-blue:#85B7EB;
-      --sinuelo:#8C1A1A;--sinuelo-light:rgba(140,26,26,0.25);--sinuelo-text:#FFAAAA;
-      --scrollbar:#444;
-    }
-    body.theme-light{
-      --bg-app:#f0eeea;--bg-header:#ffffff;--bg-card:#ffffff;--bg-card2:#f7f5f2;
-      --bg-input:#f7f5f2;--border:#e0ddd8;--border2:#ece9e4;
-      --text-primary:#1a1a1a;--text-secondary:#6b6560;--text-muted:#b0aaa4;
-      --text-accent:#8C1A1A;--text-green:#0F6E56;--text-blue:#185FA5;
-      --sinuelo:#8C1A1A;--sinuelo-light:rgba(140,26,26,0.10);--sinuelo-text:#8C1A1A;
-      --scrollbar:#ccc;
-    }
-    body{background:var(--bg-app);color:var(--text-primary)}
-    ::-webkit-scrollbar-thumb{background:var(--scrollbar)}
-  </style>
-</head>
-<body class="theme-light">
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useRef } = React;
-
-// ── CONFIGURAÇÕES E DADOS ───────────────────────────────────────────
-const STAGES = [
-  { id:"prospeccao",   label:"Prospecção",   tag:"S1",   color:"var(--text-secondary)" },
-  { id:"qualificacao", label:"Qualificação",  tag:"S2",   color:"#FF9090" },
-  { id:"diagnostico",  label:"Diagnóstico",   tag:"S2+",  color:"#378ADD" },
-  { id:"proposta",     label:"Proposta",      tag:"S3",   color:"#BA7517" },
-  { id:"negociacao",   label:"Negociação",    tag:"NEG",  color:"#D85A30" },
-  { id:"fechamento",   label:"Fechamento",    tag:"FECH", color:"#639922" },
-  { id:"pos_venda",    label:"Pós-Venda",     tag:"M",    color:"#0F6E56" },
-];
-
-const STORAGE_KEY = "crm_industrial_v2";
-const DEMO = [{"id": "1700000001", "title": "Multiplicador HT3 - 1000 + Tor. Pro 200 - 1504", "company": "Arcelormittal", "supplier": "Norbar", "contact": "Rafael Martins", "resp": "Elieser", "value": 0, "stage": "qualificacao", "priority": "baixa", "negType": "D", "forecastColor": "none", "nextAction": "Verificar torque processo", "nextDate": "2026-04-25", "notes": "Análise técnica inicial realizada.", "history": [], "visitHistory": [], "createdAt": "2026-03-01"}];
-
-function loadData() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
-function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch {} }
-
-function App() {
-  // ── ESTADOS (HOOKS) NA ORDEM CORRETA ──
-  // Simulação de sessão ativa para ignorar o ecrã de login
-  const [authSession] = useState({ user: { email: 'eliesermusicoccb@gmail.com' } });
-  const [authChecked] = useState(true);
-  
-  const [opps, setOpps] = useState(() => loadData() || DEMO);
-  const [view, setView] = useState("kanban");
-  const [theme, setTheme] = useState(() => localStorage.getItem("crm_theme_v1") || "light");
-  const [sel, setSel] = useState(null);
-  const [newModal, setNewModal] = useState(false);
-  const [forecastFilter, setForecastFilter] = useState("todos");
-
-  useEffect(() => { 
-    saveData(opps);
-    localStorage.setItem("crm_theme_v1", theme);
-    document.body.className = theme === 'light' ? 'theme-light' : 'theme-dark';
-  }, [opps, theme]);
-
-  // ── COMPONENTES DE INTERFACE ORIGINAIS ──
-  const btnStyle = (active) => ({
-    padding: "8px 16px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    background: active ? "var(--sinuelo)" : "var(--bg-card)",
-    color: active ? "#fff" : "var(--text-primary)",
-    cursor: "pointer",
-    fontSize: "13px",
-    fontWeight: 600,
-    transition: "all 0.2s"
-  });
-
-  return (
-    <div style={{minHeight:"100vh", padding:"20px"}}>
-      
-      {/* HEADER ORIGINAL COM LOGO */}
-      <div style={{background:"var(--bg-header)", padding:"16px", borderRadius:"12px", border:"1px solid var(--border)", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"24px", boxShadow:"0 2px 10px rgba(0,0,0,0.05)"}}>
-        <div style={{display:"flex", alignItems:"center", gap:"15px"}}>
-          <div style={{width:"44px", height:"44px", background:"var(--sinuelo)", borderRadius:"10px", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 12px var(--sinuelo-light)"}}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <div>
-            <h1 style={{margin:0, color:"var(--text-primary)", fontSize:"20px", fontWeight:800, letterSpacing:"-0.5px"}}>FORECAST-CRM</h1>
-            <span style={{fontSize:"11px", color:"var(--text-muted)", fontWeight:600}}>SINUELO SERVICE · COMERCIAL</span>
-          </div>
-        </div>
-        
-        <div style={{display:"flex", gap:"12px", alignItems:"center"}}>
-          <div style={{display:"flex", background:"var(--bg-app)", padding:"4px", borderRadius:"10px", border:"1px solid var(--border)"}}>
-            <button onClick={() => setView("kanban")} style={btnStyle(view === "kanban")}>Kanban</button>
-            <button onClick={() => setView("tabela")} style={btnStyle(view === "tabela")}>Tabela</button>
-          </div>
-          <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} style={{...btnStyle(false), padding:"8px 12px"}}>
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-          <button onClick={() => setNewModal(true)} style={{...btnStyle(true), background:"#27500A", border:"none"}}>+ Novo</button>
-        </div>
-      </div>
-
-      {/* DASHBOARD DE ETAPAS */}
-      <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:"16px", marginBottom:"24px"}}>
-        {STAGES.map(s => {
-          const count = opps.filter(o => o.stage === s.id).length;
-          return (
-            <div key={s.id} style={{background:"var(--bg-card)", padding:"20px", borderRadius:"14px", border:"1px solid var(--border)", borderLeft:`5px solid ${s.color}`, position:"relative", overflow:"hidden"}}>
-              <div style={{fontSize:"11px", fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.5px"}}>{s.label}</div>
-              <div style={{fontSize:"28px", fontWeight:800, marginTop:"8px", color:"var(--text-primary)"}}>{count}</div>
-              <div style={{position:"absolute", right:"-10px", bottom:"-10px", opacity:0.05, transform:"rotate(-15px)"}}>
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* CONTEÚDO PRINCIPAL */}
-      <div style={{background:"var(--bg-card)", padding:"24px", borderRadius:"16px", border:"1px solid var(--border)", minHeight:"500px", boxShadow:"0 4px 20px rgba(0,0,0,0.03)"}}>
-        {view === "kanban" ? (
-          <div style={{display:"flex", gap:"20px", overflowX:"auto", paddingBottom:"20px"}}>
-             {STAGES.map(s => (
-               <div key={s.id} style={{minWidth:"280px", flex:1}}>
-                 <div style={{display:"flex", justifyContent:"space-between", marginBottom:"15px", padding:"0 5px"}}>
-                   <span style={{fontWeight:700, fontSize:"13px", color:s.color}}>{s.label.toUpperCase()}</span>
-                   <span style={{background:"var(--border)", padding:"2px 8px", borderRadius:"10px", fontSize:"11px", fontWeight:700}}>{opps.filter(o=>o.stage===s.id).length}</span>
-                 </div>
-                 <div style={{display:"flex", flexDirection:"column", gap:"12px"}}>
-                   {opps.filter(o => o.stage === s.id).map(o => (
-                     <div key={o.id} onClick={() => setSel(o)} style={{background:"var(--bg-app)", padding:"16px", borderRadius:"12px", border:"1px solid var(--border)", cursor:"pointer", transition:"transform 0.2s"}}>
-                       <div style={{fontSize:"14px", fontWeight:700, marginBottom:"6px"}}>{o.title}</div>
-                       <div style={{fontSize:"12px", color:"var(--text-secondary)"}}>{o.company}</div>
-                       <div style={{marginTop:"12px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-                          <span style={{fontSize:"10px", fontWeight:700, background:"var(--sinuelo-light)", color:"var(--sinuelo-text)", padding:"3px 8px", borderRadius:"6px"}}>{o.resp}</span>
-                          <span style={{fontSize:"10px", color:"var(--text-muted)"}}>{o.nextDate || 'Sem data'}</span>
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-             ))}
-          </div>
-        ) : (
-          <div style={{textAlign:"center", padding:"100px 0", color:"var(--text-muted)"}}>
-            <p>Modo Tabela Ativo. Clique em Kanban para ver os cartões.</p>
-          </div>
-        )}
-      </div>
-
-      {/* RODAPÉ INFORMATIVO */}
-      <div style={{marginTop:"20px", textAlign:"center", fontSize:"11px", color:"var(--text-muted)"}}>
-        Utilizador: <strong>{authSession.user.email}</strong> | Modo de Acesso Direto Ativo
-      </div>
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
 </script>
 </body>
 </html>
