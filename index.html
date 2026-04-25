@@ -96,6 +96,7 @@ function LoginScreen({ onLogin }) {
   const [user, setUser] = React.useState("");
   const [pass, setPass] = React.useState("");
   const [err,  setErr]  = React.useState("");
+  const [showPass, setShowPass] = React.useState(false);
 
   function handleLogin(e) {
     e.preventDefault();
@@ -134,9 +135,12 @@ function LoginScreen({ onLogin }) {
           </div>
           <div style={{marginBottom:"20px",textAlign:"left"}}>
             <label style={{fontSize:"11px",fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:".06em",display:"block",marginBottom:"5px"}}>Senha</label>
-            <input type="password" value={pass} onChange={e=>setPass(e.target.value)}
-              style={{width:"100%",padding:"10px 12px",fontSize:"14px",borderRadius:"8px",border:"1px solid var(--border)",background:"var(--bg-input)",color:"var(--text-primary)",outline:"none",boxSizing:"border-box"}}
-              placeholder="sua senha"/>
+            <div style={{position:"relative"}}>
+              <input type={showPass?"text":"password"} value={pass} onChange={e=>setPass(e.target.value)}
+                style={{width:"100%",padding:"10px 12px",fontSize:"14px",borderRadius:"8px",border:"1px solid var(--border)",background:"var(--bg-input)",color:"var(--text-primary)",outline:"none",boxSizing:"border-box",paddingRight:"42px"}}
+                placeholder="sua senha"/>
+              <button type="button" onClick={()=>setShowPass(p=>!p)} style={{position:"absolute",right:"10px",top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:"16px",color:"#888"}}>{showPass?"🙈":"👁"}</button>
+            </div>
           </div>
           {err && <div style={{fontSize:"12px",color:"#E24B4A",background:"rgba(226,75,74,0.1)",borderRadius:"6px",padding:"8px 12px",marginBottom:"14px"}}>{err}</div>}
           <button type="submit"
@@ -168,9 +172,6 @@ function App() {
   const SETTINGS_KEY = "crm_settings_v1";
   const CUR_YEAR     = 2026;
   const today        = new Date().toISOString().slice(0,10);
-
-  function loadData() { try { const r=localStorage.getItem(STORAGE_KEY); return r?JSON.parse(r):null; } catch { return null; } }
-  function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch {} }
 
   const [opps, setOpps]           = useState(() => loadData() || DEMO);
   const [sel, setSel]             = useState(null);
@@ -259,6 +260,215 @@ function App() {
     try { localStorage.removeItem("crm_session"); } catch(e) {}
     setCurrentUser(null);
   }
+  function setAndSave(list) { setOpps(list); }
+
+  function updateOpp(u) {
+    setAndSave(opps.map(o => o.id===u.id ? u : o));
+    setSel(u);
+  }
+
+  function move(id, dir) {
+    const opp = opps.find(o=>o.id===id);
+    const idx = STAGES.findIndex(s=>s.id===opp.stage);
+    const ni  = idx+dir;
+    if (ni<0||ni>=STAGES.length) return;
+    const u = {...opp, stage:STAGES[ni].id};
+    setAndSave(opps.map(o=>o.id===id?u:o));
+    setSel(u);
+  }
+
+  function addOpp() {
+    if (!form.title||!form.company) return;
+    const o = {...form, id:Date.now().toString(), value:Number(form.value)||0, history:[], createdAt:new Date().toISOString().slice(0,10)};
+    setAndSave([...opps, o]);
+    setNewModal(false);
+    setForm({title:"",company:"",contact:"",value:"",stage:"prospeccao",priority:"media",nextAction:"",nextDate:"",notes:""});
+  }
+
+  function delOpp(id) { setAndSave(opps.filter(o=>o.id!==id)); setSel(null); }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(opps,null,2)],{type:"application/json"});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href=url; a.download="crm-backup.json"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const d = JSON.parse(ev.target.result);
+        if (Array.isArray(d)) { setAndSave(d); alert("Dados importados com sucesso!"); }
+        else alert("Formato inválido.");
+      } catch { alert("Arquivo inválido."); }
+    };
+    reader.readAsText(file);
+    e.target.value="";
+  }
+
+  function saveKey() {
+    localStorage.setItem(KEY_STORE, keyDraft);
+    setApiKey(keyDraft);
+    setShowKey(false);
+  }
+
+  async function chat(msg) {
+    const m = msg||aiInput;
+    if (!m.trim()||aiLoading) return;
+    if (!apiKey) { setKeyDraft(""); setShowKey(true); return; }
+    const ctx = sel
+      ? `Oportunidade: "${sel.title}" | Empresa: ${sel.company} | Etapa: ${STAGES.find(s=>s.id===sel.stage)?.label} | Valor: R$ ${(sel.value||0).toLocaleString("pt-BR")} | Próxima ação: ${sel.nextAction} | Notas: ${sel.notes}`
+      : "Nenhuma oportunidade selecionada.";
+    const msgs = [...aiMsgs, {role:"user",content:m}];
+    setAiMsgs(msgs);
+    setAiInput("");
+    setAiLoading(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system:SYS_PROMPT,
+          messages:[...msgs.slice(0,-1),{role:"user",content:`${m}\n\nContexto: ${ctx}`}]
+        })
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error.message);
+      const reply = d.content?.map(c=>c.text||"").join("")||"Sem resposta.";
+      setAiMsgs([...msgs,{role:"assistant",content:reply}]);
+    } catch(err) {
+      setAiMsgs([...msgs,{role:"assistant",content:`Erro: ${err.message}`}]);
+    }
+    setAiLoading(false);
+  }
+
+  function openAI(prompt) {
+    if (!apiKey) { setKeyDraft(""); setShowKey(true); return; }
+    setAiOpen(true);
+    if (aiMsgs.length===0) setAiMsgs([{role:"assistant",content:"Olá! Sou seu Gestor IA. Selecione uma oportunidade e me pergunte sobre próximos passos, argumentos NOMUDA, torque, estratégia 3S+M, plano 5W2H ou Kaizen para o cliente."}]);
+    if (prompt) setTimeout(()=>chat(prompt),150);
+  }
+
+  const today    = new Date().toISOString().slice(0,10);
+  const totalVal = opps.reduce((s,o)=>s+(o.value||0),0);
+  const wonVal   = opps.filter(o=>o.stage==="pos_venda").reduce((s,o)=>s+(o.value||0),0);
+  const overdue  = opps.filter(o=>o.nextDate&&o.nextDate<today).length;
+  const highPri  = opps.filter(o=>o.priority==="alta").length;
+
+  const inp = {width:"100%",fontSize:"12px",padding:"7px 9px",borderRadius:"6px",border:"1px solid #ddd",background:"#fafafa",color:"#1a1a1a",boxSizing:"border-box"};
+  const lbl = {fontSize:"11px",color:"#888",marginBottom:"3px",display:"block",textTransform:"uppercase",letterSpacing:"0.05em"};
+  const btn = (bg,tc,bc) => ({padding:"6px 12px",fontSize:"12px",borderRadius:"6px",border:`1px solid ${bc||bg}`,background:bg,color:tc,cursor:"pointer",fontWeight:500});
+
+  // ── TAREFAS ────────────────────────────────────────────────────────
+  function addTask(){ if(!taskForm.title) return; saveTasks([...tasks,{...taskForm,id:Date.now().toString(),createdAt:new Date().toISOString().slice(0,10)}]); setTaskForm(emptyTask); setTaskModal(false); }
+  function delTask(id){ saveTasks(tasks.filter(t=>t.id!==id)); }
+  function toggleTaskDone(id){ saveTasks(tasks.map(t=>t.id===id?{...t,done:!t.done}:t)); }
+
+  // ── ORÇAMENTOS ─────────────────────────────────────────────────────
+  function addOrcamento(){ if(!orcForm.number||!orcForm.client) return; saveOrcamentos([...orcamentos,{...orcForm,id:Date.now(),value:Number(orcForm.value),valueComIPI:Number(orcForm.valueComIPI||0),valueComICMS:Number(orcForm.valueComICMS||0)}]); setOrcForm({number:"",client:"",contact:"",supplier:"",value:0,valueComIPI:0,valueComICMS:0,date:"",status:"aberto",oppId:"",notes:"",fileName:"",items:[]}); setOrcModal(false); }
+  function delOrcamento(id){ saveOrcamentos(orcamentos.filter(o=>o.id!==id)); if(selOrc?.id===id)setSelOrc(null); }
+  function buscarItem(q){ setOrcItemSearch(q); if(!q.trim()){setItemSearchResults([]);return;} const lq=q.toLowerCase(); const results=[]; orcamentos.forEach(orc=>{(orc.items||[]).forEach(it=>{const match=(it.codigo||"").toLowerCase().includes(lq)||(it.sigma||"").toLowerCase().includes(lq)||(it.desc||"").toLowerCase().includes(lq)||(orc.client||"").toLowerCase().includes(lq)||(orc.supplier||"").toLowerCase().includes(lq); if(match) results.push({orc,item:it});}); if(!(orc.items&&orc.items.length)){const mh=(orc.client||"").toLowerCase().includes(lq)||(orc.supplier||"").toLowerCase().includes(lq)||(orc.number||"").toLowerCase().includes(lq)||(orc.notes||"").toLowerCase().includes(lq); if(mh) results.push({orc,item:null});}}); setItemSearchResults(results); }
+
+  // ── PROJETOS ───────────────────────────────────────────────────────
+  function addProjeto(){ if(!projForm.name) return; saveProjetos([...projetos,{...projForm,id:Date.now(),createdAt:new Date().toISOString().slice(0,10)}]); setProjForm(emptyProj); setProjModal(false); }
+  function delProjeto(id){ saveProjetos(projetos.filter(p=>p.id!==id)); if(selProj?.id===id)setSelProj(null); }
+  function updateProj(u){ saveProjetos(projetos.map(p=>p.id===u.id?u:p)); setSelProj(u); }
+
+  // ── IMPORTAR ORÇAMENTO XLSX ─────────────────────────────────────────
+  async function importOrcamentoXLSX(e) {
+    const file=e.target.files[0]; if(!file) return;
+    const XLSX=window.XLSX; if(!XLSX){alert("Aguarde o carregamento.");return;}
+    const data=await file.arrayBuffer();
+    const wb=XLSX.read(data); const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+    const items=[]; let totalComICMS=0, totalComIPI=0;
+    for(let i=0;i<rows.length;i++){
+      const row=rows[i]; if(!row||!row.length) continue;
+      const itemNum=row[0];
+      if(typeof itemNum==="number"&&itemNum>=1&&itemNum<=99){
+        const qtd=Number(row[4])||1,desc=String(row[5]||"").trim(),codigo=String(row[6]||"").trim(),sigma=String(row[7]||"").trim(),entrega=String(row[9]||"").trim(),preco_unit=Number(row[11])||0,val_liq_unit=Number(row[19])||0,total_liq=+(val_liq_unit*qtd).toFixed(2);
+        items.push({item:itemNum,qtd,desc,codigo,sigma,entrega,preco_unit:+preco_unit.toFixed(2),val_liq_unit:+val_liq_unit.toFixed(2),total_liq});
+      }
+      const colL=String(row[11]||"").toLowerCase();
+      if(colL.includes("valor total com icms")) totalComICMS=Number(row[12])||0;
+      if(colL.includes("valor total com ipi")&&!colL.includes("difal")) totalComIPI=Number(row[12])||0;
+    }
+    if(items.length===0){alert("Nenhum item encontrado.");e.target.value="";return;}
+    const valorPipeline=totalComICMS||items.reduce((s,it)=>s+(it.total_liq||0),0);
+    const fname=file.name.replace(/\.xlsx?$/i,"");
+    const newOrc={id:Date.now().toString(),number:fname.split("_").slice(-2).join("_")||fname,client:fname.split("_")[1]||"",contact:"",supplier:"Momento",value:+valorPipeline.toFixed(2),valueComIPI:+totalComIPI.toFixed(2),valueComICMS:+totalComICMS.toFixed(2),date:new Date().toISOString().slice(0,10),status:"aberto",oppId:"",notes:items.length+" itens importados.",fileName:file.name,items};
+    setOrcForm(newOrc); setOrcModal(true); e.target.value="";
+  }
+
+  // ── PÓS-VENDA ──────────────────────────────────────────────────────
+  function savePosVendas(p){ try{localStorage.setItem("crm_posvendas_v1",JSON.stringify(p));}catch{} }
+
+  // ── IMPORTAR CLIENTES XLSX ──────────────────────────────────────────
+  async function importClientsXLSX(e){
+    const file=e.target.files[0]; if(!file) return;
+    const XLSX=window.XLSX; if(!XLSX){alert("Aguarde.");return;}
+    const data=await file.arrayBuffer(); const wb=XLSX.read(data);
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true});
+    const dict={};
+    for(let i=1;i<rows.length;i++){
+      const row=rows[i]; if(!row||!row.length) continue;
+      const cliente=String(row[3]||"").trim(),apelido=String(row[4]||"").trim()||cliente;
+      if(!apelido) continue;
+      if(!dict[apelido]) dict[apelido]={alias:apelido,name:cliente,cnpj:String(row[0]||"").trim(),address:String(row[5]||"").trim(),cep:String(row[6]||"").trim(),city:String(row[7]||"").trim(),state:String(row[8]||"").trim(),region:String(row[9]||"").trim(),segment:String(row[10]||"").trim(),contacts:[]};
+      const contato=String(row[12]||"").trim();
+      if(contato) dict[apelido].contacts.push({name:contato,role:String(row[13]||"").trim(),tel:String(row[14]||"").trim(),cel:String(row[15]||"").trim(),email:String(row[16]||"").trim()});
+    }
+    const list=Object.values(dict); saveClients(list); alert(list.length+" clientes importados!"); e.target.value="";
+  }
+
+  // ── VISITA / FOLLOW-UP ─────────────────────────────────────────────
+  function openVisita(opp){ setVisitaOpp(opp); setVisitaForm({date:today,contact:opp.contact||"",summary:"",what:"",why:"",who:"",where:"",how:"",cost:"",nextStep:""}); setVisitaModal(true); }
+  function saveVisita(){ if(!visitaForm.summary||!visitaOpp) return; const record={...visitaForm,id:Date.now().toString(),createdAt:today}; updateOpp({...visitaOpp,visitHistory:[record,...(visitaOpp.visitHistory||[])]}); setVisitaModal(false); setVisitaOpp(null); }
+
+  // ── RELATÓRIO SEMANAL ──────────────────────────────────────────────
+  function toggleRelOpp(id){ setRelOpps(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]); }
+  async function gerarRelatorio(){
+    if(!relOpps.length){alert("Selecione ao menos uma oportunidade.");return;}
+    const sel2=opps.filter(o=>relOpps.includes(o.id));
+    const prompt="Gere um relatório semanal de vendas conciso para estas oportunidades:\n\n"+sel2.map(o=>`Cliente: ${o.company}\nContato: ${o.contact}\nOportunidade: ${o.title}\nEtapa: ${o.stage}\nPróxima ação: ${o.nextAction||"—"}\nValor: R$ ${(o.value||0).toLocaleString("pt-BR")}`).join("\n\n---\n\n");
+    setRelLoading(true); setRelOutput("");
+    try{
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+      const d=await r.json(); setRelOutput(d.content?.[0]?.text||"Erro ao gerar relatório.");
+    }catch(e){setRelOutput("Erro: "+e.message);} setRelLoading(false);
+  }
+
+  // ── CONFIGURAÇÕES ──────────────────────────────────────────────────
+  function saveSettings(s){ setColSettings(s); try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}catch{} }
+  function saveProfile(p){ setProfile(p); try{localStorage.setItem("crm_profile_v1",JSON.stringify(p));}catch{} }
+
+  // ── IMPORTAR DADOS (XLSX) ──────────────────────────────────────────
+  async function importData(e) {
+    const file=e.target.files[0]; if(!file) return;
+    const XLSX=window.XLSX; if(!XLSX){alert("Aguarde o carregamento do leitor de planilhas.");return;}
+    const fname=file.name.toLowerCase(); const data=await file.arrayBuffer();
+    const wb=XLSX.read(data); const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+    const isClientes=fname.includes("cadastro")||fname.includes("cliente");
+    const isForecast=fname.includes("forecast")||fname.includes("pipeline");
+    if(isClientes){
+      const dict={};
+      for(let i=1;i<rows.length;i++){const row=rows[i];if(!row||!row.length)continue;const cliente=String(row[3]||"").trim(),apelido=String(row[4]||"").trim()||cliente;if(!apelido)continue;if(!dict[apelido])dict[apelido]={alias:apelido,name:cliente,cnpj:String(row[0]||"").trim(),address:String(row[5]||"").trim(),city:String(row[7]||"").trim(),state:String(row[8]||"").trim(),region:String(row[9]||"").trim(),segment:String(row[10]||"").trim(),contacts:[]};const contato=String(row[12]||"").trim();if(contato)dict[apelido].contacts.push({name:contato,role:String(row[13]||"").trim(),email:String(row[16]||"").trim()});}
+      const list=Object.values(dict); saveClients(list); alert(list.length+" clientes importados!");
+    } else if(isForecast){
+      const newOpps=[];
+      for(let i=1;i<rows.length;i++){const row=rows[i];if(!row||!row.length||!row[2])continue;newOpps.push({id:Date.now().toString()+i,negType:String(row[0]||"D").trim(),resp:String(row[1]||"").trim(),company:String(row[2]||"").trim(),supplier:String(row[3]||"").trim(),title:String(row[4]||"").trim(),value:Number(row[5])||0,stage:"qualificacao",priority:"media",forecastColor:"none",nextAction:String(row[12]||"").trim(),nextDate:"",nextTime:"",contact:String(row[13]||"").trim(),notes:"",months:{},history:[],visitHistory:[],createdAt:new Date().toISOString().slice(0,10)});}
+      if(window.confirm("Importar "+newOpps.length+" oportunidades?")){setAndSave(newOpps);alert(newOpps.length+" oportunidades importadas!");}
+    } else { alert("Planilha nao reconhecida. Nomeie com clientes ou forecast. Arquivo: "+file.name); }
+    e.target.value="";
+  }
+
   // Vendedor vê só suas oportunidades
   const visibleOpps = isVendedor
     ? opps.filter(o => (o.resp||"").toLowerCase().includes(myResp.toLowerCase()))
